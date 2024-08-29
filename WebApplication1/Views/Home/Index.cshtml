@@ -1,0 +1,304 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-draw/dist/leaflet.draw.css" />
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-draw/dist/leaflet.draw.js"></script>
+<script src="~/turf.min.js"></script>
+<head>
+    <style>
+        #map {
+            height: 600px;
+            width: 100%;
+        }
+
+        .popup-form {
+            display: none;
+            position: absolute;
+            background: white;
+            border: 1px solid #ccc;
+            padding: 10px;
+            z-index: 1000;
+        }
+
+        #MarkerTitle {
+            text-align: center;
+        }
+
+        #title, #note {
+            width: 100%;
+        }
+
+        .popup-form button {
+            display: block;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <form method="post" action="/Home/SaveDrawing">
+        <input type="hidden" name="Coordinates" id="coordinatesInput" value="" />
+        <input type="hidden" name="Type" id="typeInput" value="" />
+        <input type="hidden" name="Shape" id="geometryInput" value="" />
+        <button type="submit">Kaydet</button>
+    </form>
+
+    <div id="popupForm" class="popup-form">
+        <h3 id="MarkerTitle">Marker Bilgileri</h3>
+        <label for="title">Başlık:</label>
+        <input type="text" id="title" name="title">
+        <label for="note">Not:</label>
+        <textarea id="note" name="note"></textarea>
+        <button id="saveMarker">Kaydet</button>
+    </div>
+
+    <script>
+        // Harita Getirme
+        var openstreetmapUrl = 'http:{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            openstreetmap = L.tileLayer(openstreetmapUrl, { maxZoom: 18 }),
+            map = new L.Map('map', { center: new L.LatLng(40.18869647290294, 29.054207783048007), zoom: 10 }),
+            drawnItems = L.featureGroup().addTo(map);
+        openstreetmap.addTo(map);
+
+        //Harita Üzerine Çizim Yapma
+        var drawControl = new L.Control.Draw({
+            draw: {
+                polygon: true,
+                polyline: true,
+                rectangle: true,
+                circle: true,
+                marker: true
+            },
+            edit: {
+                featureGroup: drawnItems,
+                remove: true
+            }
+        });
+        map.addControl(drawControl);
+
+
+        // OpenStreetMap ile GoogleMaps Arasında Dinamik Geçiş Yapma
+        L.control.layers({
+            'OpenStreetMap': openstreetmap,
+            'Google': L.tileLayer('http://www.google.cn/maps/vt?lyrs=s@189&gl=cn&x={x}&y={y}&z={z}', {
+                attribution: 'Google'
+            })
+        }, { 'Draw Layer': drawnItems }, { position: 'topleft', collapsed: false }).addTo(map);
+
+        map.on('draw:created', function (e) {
+            var layer = e.layer;
+            drawnItems.addLayer(layer);
+
+            // Poligon koordinatlarını GeoJSON formatında al
+            var geoJSON = layer.toGeoJSON();
+            var shapeType = geoJSON.geometry.type;
+            var coordinates = geoJSON.geometry.coordinates;
+
+            // Poligonun alanını hesapla
+            var area = 0;
+            if (shapeType === 'Polygon' || shapeType === 'MultiPolygon') {
+                var polygon = turf.polygon(coordinates);
+                area = turf.area(polygon);
+
+                var popupContent = '<b>Alan:</b> ' + (area / 10000).toFixed(2) + ' m²<br>';
+            }
+            else if (shapeType === 'Point') {
+                var center = layer.getLatLng();
+                var radius = layer.getRadius();
+
+                var point = turf.point([center.lng, center.lat]);
+                var circle = turf.circle(point, radius, { units: 'meters' });
+
+                var area = turf.area(circle);
+                var newArea = (area / 10000).toFixed(2);
+                console.log('Dairenin Alanı: ' + newArea + ' m²');
+
+                var popupContent = '<b>Daire Bilgileri</b><br>' +
+                    '<b>Yarıçap:</b> ' + Math.round(radius) + ' m<br>' +
+                    '<b>Alan:</b> ' + newArea + ' m²';
+
+                var color;
+                if (newArea > 0 && newArea < 100) {
+                    color = 'green';
+                } else if (newArea >= 100 && newArea < 500) {
+                    color = 'yellow';
+                }
+                else if (newArea >= 500 && newArea < 1000) {
+                    color = 'blue';
+                }
+                else if (newArea > 1000) {
+                    color = 'red';
+                }
+
+                // Dairenin stilini güncelle
+                layer.setStyle({
+                    color: color,
+                    fillColor: color,
+                    fillOpacity: 0.5
+                });
+            }
+
+            layer.bindPopup(popupContent).openPopup();
+
+            var popupForm = document.getElementById('popupForm');
+            var position = map.latLngToContainerPoint(layer.getLatLngs()[0][0]);
+
+            popupForm.style.display = 'block';
+            popupForm.style.left = position.x + 'px';
+            popupForm.style.top = position.y + 'px';
+
+            document.getElementById('saveMarker').onclick = function () {
+                var title = document.getElementById('title').value;
+                var note = document.getElementById('note').value;
+
+                layer.bindPopup('<b>' + title + '</b><br>' + note).openPopup();
+                popupForm.style.display = 'none';
+
+                document.getElementById('title').value = '';
+                document.getElementById('note').value = '';
+            };
+
+            document.getElementById('coordinatesInput').value = JSON.stringify(coordinates);
+            document.getElementById('typeInput').value = shapeType;
+
+            console.log(coordinates);
+        });
+
+
+
+
+        // Kullanıcı Konumu Alma
+        var userLatitude, userLongitude;
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                function (position) {
+                    var userLatLng = new L.LatLng(position.coords.latitude, position.coords.longitude);
+                    addUserLocationToMap(userLatLng);
+                    userLatitude = position.coords.latitude;
+                    userLongitude = position.coords.longitude;
+                    document.getElementById('coordinatesInput').value = userLatitude + ',' + userLongitude;
+                },
+                function (error) {
+                    console.error('Konum Alınamadı:', error.message);
+                }
+            );
+        } else {
+            console.error('Tarayıcınız Geolocation API Desteklemiyor.');
+        }
+
+        // Kullanıcı İkonu
+        var userIcon = L.icon({
+            iconUrl: 'https://cdn0.iconfinder.com/data/icons/user-icons-4/100/user-17-512.png',
+            iconSize: [40, 40],
+            iconAnchor: [16, 32],
+            popupAnchor: [0, -32]
+        });
+
+        var userLocationMarker;
+        function addUserLocationToMap(location) {
+            if (userLocationMarker) {
+                userLocationMarker.remove();
+            }
+            userLocationMarker = L.marker(location, { icon: userIcon }).addTo(map);
+
+            var userLatitude = location.lat;
+            var userLongitude = location.lng;
+            var geocodingUrl = 'https://nominatim.openstreetmap.org/reverse?format=json&lat=' + userLatitude + '&lon=' + userLongitude;
+            fetch(geocodingUrl)
+                .then(response => response.json())
+                .then(data => {
+                    var address = data.display_name;
+                    var streetViewUrl = 'https://maps.googleapis.com/maps/api/streetview?size=600x300&location=' + userLatitude + ',' + userLongitude;
+
+                    var popupContent = '<b><center>Konum Bilgileri</center></b>' +
+                        '<b>Adres</b> <br>' + address + '<br>' +
+                        '<b>Koordinat</b><br> ' + userLatitude + ', ' + userLongitude;
+                    '<img src="' + streetViewUrl + '" alt="Bina Fotoğrafı" style="width: 100%; max-width: 600px;">';
+
+                    userLocationMarker.bindPopup(popupContent);
+
+                    userLocationMarker.on('click', function () {
+                        userLocationMarker.openPopup();
+                    });
+                    //Harita Görüş Alanı Ayarlama
+                    map.setView(location, 15);
+                })
+                .catch(error => console.error('Adres alınamadı:', error));
+            //Harita Görüş Alanı Ayarlama
+            map.setView(location, 15);
+
+            var shapeType = document.getElementById('typeInput').value;
+            var coordinates = document.getElementById('coordinatesInput').value;
+        }
+
+        navigator.geolocation.getCurrentPosition(function (position) {
+            var userLatLng = new L.LatLng(position.coords.latitude, position.coords.longitude);
+
+            addUserLocationToMap(userLatLng);
+
+            document.getElementById('coordinatesInput').value = position.coords.latitude + ',' + position.coords.longitude;
+        }, function (error) {
+            console.error('Geolocation error: ' + error.message);
+        });
+
+        // Google Direction API Kullanarak Yol Tarifi
+        function getDirections(userLat, userLng, pharmacyLoc) {
+            var userLocation = L.latLng(userLatitude, userLongitude);
+            var pharmacyLocation = L.latLng(
+                parseFloat(pharmacyLoc.split(',')[0]),
+                parseFloat(pharmacyLoc.split(',')[1])
+            );
+            var directionsURL = 'https://www.google.com/maps/dir/?api=1' +
+                '&origin=' + userLocation.lat + ',' + userLocation.lng +
+                '&destination=' + pharmacyLocation.lat + ',' + pharmacyLocation.lng;
+            console.log(directionsURL);
+            window.location.href = directionsURL;
+        }
+        // Eczane İkonu
+        var pharmacyIcon = L.icon({
+            iconUrl: '\img.png',
+            iconSize: [32, 32],
+            iconAnchor: [16, 32],
+            popupAnchor: [0, -32]
+        });
+
+        var pharmacyMarkers = [];
+
+        function removeAllMarkers() {
+            pharmacyMarkers.forEach(function (marker) {
+                marker.remove();
+            });
+        }
+
+        // Eczaneleri Harita Üzerinde Gösterme
+        var pharmaciesData = @Html.Raw((ViewBag.PharmaciesData));
+
+        console.log(pharmaciesData);
+
+        pharmaciesData.result.forEach(function (pharmacy) {
+            var loc = pharmacy.loc.split(',').map(coord => coord.trim());
+            if (loc.length === 2) {
+                var lat = parseFloat(loc[0]);
+                var lng = parseFloat(loc[1]);
+                var latLng = new L.LatLng(lat, lng);
+                console.log(latLng);
+            }
+            console.log(pharmacy.name,pharmacy.address, loc[0],loc[1]);
+            var marker = L.marker(latLng, { icon: pharmacyIcon }).addTo(map);
+
+            pharmacyMarkers.push(marker);
+
+            marker.bindPopup(
+                '<b><center>Konum Bilgileri</center></b>' +
+                '<b style="color:blue">' + pharmacy.name + '</b><br>' +
+                '<b>Adres</b> <br>' + pharmacy.address + '<br>' +
+                '<b>Telefon</b> <br>' + pharmacy.phone + '<br>' +
+                '<center><button style="padding:5px 10px;background-color:green;border:none;color:White;cursor:pointer" onclick="getDirections(' + latLng.lat + ',' + latLng.lng + ',\'' + pharmacy.loc + '\')">Yol Tarifi</button></center>'
+            );
+        });
+    </script>
+</body>
