@@ -35,6 +35,7 @@
             display: block;
             width: 100%;
         }
+
     </style>
 </head>
 <body>
@@ -104,7 +105,7 @@
                 var polygon = turf.polygon(coordinates);
                 area = turf.area(polygon);
 
-                var popupContent = '<b>Alan:</b> ' + (area / 10000).toFixed(2) + ' m²<br>';
+                var popupContent = '<b style="color:red;">Alan Bilgisi</b><br>' + '<b>Alan:</b> ' + (area / 10000).toFixed(2) + ' m²';
             }
             else if (shapeType === 'Point') {
                 var center = layer.getLatLng();
@@ -117,7 +118,7 @@
                 var newArea = (area / 10000).toFixed(2);
                 console.log('Dairenin Alanı: ' + newArea + ' m²');
 
-                var popupContent = '<b>Daire Bilgileri</b><br>' +
+                var popupContent = '<b style="color:red;">Daire Bilgileri</b><br>' +
                     '<b>Yarıçap:</b> ' + Math.round(radius) + ' m<br>' +
                     '<b>Alan:</b> ' + newArea + ' m²';
 
@@ -144,8 +145,9 @@
 
             layer.bindPopup(popupContent).openPopup();
 
+            // Popup formunu ve koordinatları güncelle
             var popupForm = document.getElementById('popupForm');
-            var position = map.latLngToContainerPoint(layer.getLatLngs()[0][0]);
+            var position = map.latLngToContainerPoint(layer.getLatLngs ? layer.getLatLngs()[0][0] : layer.getLatLng());
 
             popupForm.style.display = 'block';
             popupForm.style.left = position.x + 'px';
@@ -155,9 +157,11 @@
                 var title = document.getElementById('title').value;
                 var note = document.getElementById('note').value;
 
-                layer.bindPopup('<b>' + title + '</b><br>' + note).openPopup();
-                popupForm.style.display = 'none';
+                // Popup içeriğini güncelle
+                popupContent += '<b style="color:red;"><br>İçerik Bilgileri</b><br>' + '<b>' + title + '</b><br>' + note;
+                layer.bindPopup(popupContent).openPopup();
 
+                popupForm.style.display = 'none';
                 document.getElementById('title').value = '';
                 document.getElementById('note').value = '';
             };
@@ -165,11 +169,8 @@
             document.getElementById('coordinatesInput').value = JSON.stringify(coordinates);
             document.getElementById('typeInput').value = shapeType;
 
-            console.log(coordinates);
+            //console.log(coordinates);
         });
-
-
-
 
         // Kullanıcı Konumu Alma
         var userLatitude, userLongitude;
@@ -258,47 +259,47 @@
             console.log(directionsURL);
             window.location.href = directionsURL;
         }
-        // Eczane İkonu
-        var pharmacyIcon = L.icon({
-            iconUrl: '\img.png',
-            iconSize: [32, 32],
-            iconAnchor: [16, 32],
-            popupAnchor: [0, -32]
-        });
+        // // Eczane İkonu
+        // var pharmacyIcon = L.icon({
+        //     iconUrl: '\img.png',
+        //     iconSize: [32, 32],
+        //     iconAnchor: [16, 32],
+        //     popupAnchor: [0, -32]
+        // });
 
-        var pharmacyMarkers = [];
+        // var pharmacyMarkers = [];
 
-        function removeAllMarkers() {
-            pharmacyMarkers.forEach(function (marker) {
-                marker.remove();
-            });
-        }
+        // function removeAllMarkers() {
+        //     pharmacyMarkers.forEach(function (marker) {
+        //         marker.remove();
+        //     });
+        // }
 
-        // Eczaneleri Harita Üzerinde Gösterme
-        var pharmaciesData = @Html.Raw((ViewBag.PharmaciesData));
+        // // Eczaneleri Harita Üzerinde Gösterme
+        // var pharmaciesData = @Html.Raw((ViewBag.PharmaciesData));
 
-        console.log(pharmaciesData);
+        // console.log(pharmaciesData);
 
-        pharmaciesData.result.forEach(function (pharmacy) {
-            var loc = pharmacy.loc.split(',').map(coord => coord.trim());
-            if (loc.length === 2) {
-                var lat = parseFloat(loc[0]);
-                var lng = parseFloat(loc[1]);
-                var latLng = new L.LatLng(lat, lng);
-                console.log(latLng);
-            }
-            console.log(pharmacy.name,pharmacy.address, loc[0],loc[1]);
-            var marker = L.marker(latLng, { icon: pharmacyIcon }).addTo(map);
+        // pharmaciesData.result.forEach(function (pharmacy) {
+        //     var loc = pharmacy.loc.split(',').map(coord => coord.trim());
+        //     if (loc.length === 2) {
+        //         var lat = parseFloat(loc[0]);
+        //         var lng = parseFloat(loc[1]);
+        //         var latLng = new L.LatLng(lat, lng);
+        //         console.log(latLng);
+        //     }
+        //     console.log(pharmacy.name,pharmacy.address, loc[0],loc[1]);
+        //     var marker = L.marker(latLng, { icon: pharmacyIcon }).addTo(map);
 
-            pharmacyMarkers.push(marker);
+        //     pharmacyMarkers.push(marker);
 
-            marker.bindPopup(
-                '<b><center>Konum Bilgileri</center></b>' +
-                '<b style="color:blue">' + pharmacy.name + '</b><br>' +
-                '<b>Adres</b> <br>' + pharmacy.address + '<br>' +
-                '<b>Telefon</b> <br>' + pharmacy.phone + '<br>' +
-                '<center><button style="padding:5px 10px;background-color:green;border:none;color:White;cursor:pointer" onclick="getDirections(' + latLng.lat + ',' + latLng.lng + ',\'' + pharmacy.loc + '\')">Yol Tarifi</button></center>'
-            );
-        });
+        //     marker.bindPopup(
+        //         '<b><center>Konum Bilgileri</center></b>' +
+        //         '<b style="color:blue">' + pharmacy.name + '</b><br>' +
+        //         '<b>Adres</b> <br>' + pharmacy.address + '<br>' +
+        //         '<b>Telefon</b> <br>' + pharmacy.phone + '<br>' +
+        //         '<center><button style="padding:5px 10px;background-color:green;border:none;color:White;cursor:pointer" onclick="getDirections(' + latLng.lat + ',' + latLng.lng + ',\'' + pharmacy.loc + '\')">Yol Tarifi</button></center>'
+        //     );
+        // });
     </script>
 </body>
