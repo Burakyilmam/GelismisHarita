@@ -81,6 +81,17 @@
         });
         map.addControl(drawControl);
 
+        function makeDraggable(popup) {
+            var pos = map.latLngToLayerPoint(popup.getLatLng());
+            L.DomUtil.setPosition(popup._wrapper.parentNode, pos);
+            var draggable = new L.Draggable(popup._container, popup._wrapper);
+            draggable.enable();
+
+            draggable.on('dragend', function () {
+                var pos = map.layerPointToLatLng(this._newPos);
+                popup.setLatLng(pos);
+            });
+        }
 
         // OpenStreetMap ile GoogleMaps Arasında Dinamik Geçiş Yapma
         L.control.layers({
@@ -143,8 +154,6 @@
                 });
             }
 
-            layer.bindPopup(popupContent).openPopup();
-
             // Popup formunu ve koordinatları güncelle
             var popupForm = document.getElementById('popupForm');
             var position = map.latLngToContainerPoint(layer.getLatLngs ? layer.getLatLngs()[0][0] : layer.getLatLng());
@@ -159,7 +168,10 @@
 
                 // Popup içeriğini güncelle
                 popupContent += '<b style="color:red;"><br>İçerik Bilgileri</b><br>' + '<b>' + title + '</b><br>' + note;
+
                 layer.bindPopup(popupContent).openPopup();
+                makeDraggable(layer.getPopup());
+
 
                 popupForm.style.display = 'none';
                 document.getElementById('title').value = '';
