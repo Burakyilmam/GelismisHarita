@@ -30,10 +30,26 @@
         #title, #note {
             width: 100%;
         }
+        #note{
+            resize:none;
+            height:150px;
+            margin-top:8px;
+        }
 
         .popup-form button {
             display: block;
             width: 100%;
+        }
+
+        #saveMarker {
+            background-color: orangered;
+            color: white;
+            font-weight: bold;
+            border-radius: 5px;
+            width: 150;
+            text-align: center;
+            margin-top:8px;
+            border:none;
         }
 
     </style>
@@ -50,11 +66,11 @@
 
     <div id="popupForm" class="popup-form">
         <h3 id="MarkerTitle">Marker Bilgileri</h3>
-        <label for="title">Başlık:</label>
-        <input type="text" id="title" name="title">
-        <label for="note">Not:</label>
-        <textarea id="note" name="note"></textarea>
-        <button id="saveMarker">Kaydet</button>
+        <input placeholder="Başlık Giriniz" type="text" id="title" name="title">
+        <textarea placeholder="Mesaj Giriniz" id="note" name="note"></textarea>
+        <center>
+            <button id="saveMarker">Kaydet</button>
+        </center>
     </div>
 
     <script>
