@@ -8,6 +8,8 @@
   <li><b>CSS3</b></li>
   <li><b>JavaScript</b></li>
   <li><b>.NET Core 8</b></li>
+  <li><b>MVC Mimarisi</b></li>
+  <li><b>Entity Framework</b></li>
   <li><b>CollectAPI - Nöbetçi Eczane API</b></li>
   <li><b>Google Maps Direction API</b></li>
   <li><b>Leaflet Routing Machine</b></li>
