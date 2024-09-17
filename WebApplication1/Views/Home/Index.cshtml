@@ -234,7 +234,12 @@
                     userLatLng,
                     targetLatLng
                 ],
-                routeWhileDragging: true
+                routeWhileDragging: true,
+                router: L.Routing.osrmv1({
+                    language: 'tr', // tr - en vb.
+                    profile: 'driving', //driving - walking - cycling
+                    units: 'metric' // imperial - metric
+                })
             }).addTo(map);
         }
 
