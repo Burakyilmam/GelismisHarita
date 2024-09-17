@@ -3,9 +3,11 @@
 }
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet-draw/dist/leaflet.draw.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-draw/dist/leaflet.draw.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
 <script src="~/turf.min.js"></script>
 <head>
     <style>
@@ -210,6 +212,7 @@
                     userLatitude = position.coords.latitude;
                     userLongitude = position.coords.longitude;
                     document.getElementById('coordinatesInput').value = userLatitude + ',' + userLongitude;
+                    updateRouting(userLatLng);
                 },
                 function (error) {
                     console.error('Konum Alınamadı:', error.message);
@@ -217,6 +220,22 @@
             );
         } else {
             console.error('Tarayıcınız Geolocation API Desteklemiyor.');
+        }
+        // Yön Tarifi Rotasını Güncelle
+        function updateRouting(userLatLng) {
+            map.eachLayer(function (layer) {
+                if (layer instanceof L.Routing.Control) {
+                    map.removeLayer(layer);
+                }
+            });
+            var targetLatLng = L.latLng(40.18869647290294, 29.054207783048007);
+            L.Routing.control({
+                waypoints: [
+                    userLatLng,
+                    targetLatLng
+                ],
+                routeWhileDragging: true
+            }).addTo(map);
         }
 
         // Kullanıcı İkonu
@@ -274,19 +293,19 @@
             console.error('Geolocation error: ' + error.message);
         });
 
-        // Google Direction API Kullanarak Yol Tarifi
-        function getDirections(userLat, userLng, pharmacyLoc) {
-            var userLocation = L.latLng(userLatitude, userLongitude);
-            var pharmacyLocation = L.latLng(
-                parseFloat(pharmacyLoc.split(',')[0]),
-                parseFloat(pharmacyLoc.split(',')[1])
-            );
-            var directionsURL = 'https://www.google.com/maps/dir/?api=1' +
-                '&origin=' + userLocation.lat + ',' + userLocation.lng +
-                '&destination=' + pharmacyLocation.lat + ',' + pharmacyLocation.lng;
-            console.log(directionsURL);
-            window.location.href = directionsURL;
-        }
+        // // Google Direction API Kullanarak Yol Tarifi
+        // function getDirections(userLat, userLng, pharmacyLoc) {
+        //     var userLocation = L.latLng(userLatitude, userLongitude);
+        //     var pharmacyLocation = L.latLng(
+        //         parseFloat(pharmacyLoc.split(',')[0]),
+        //         parseFloat(pharmacyLoc.split(',')[1])
+        //     );
+        //     var directionsURL = 'https://www.google.com/maps/dir/?api=1' +
+        //         '&origin=' + userLocation.lat + ',' + userLocation.lng +
+        //         '&destination=' + pharmacyLocation.lat + ',' + pharmacyLocation.lng;
+        //     console.log(directionsURL);
+        //     window.location.href = directionsURL;
+        // }
         // // Eczane İkonu
         // var pharmacyIcon = L.icon({
         //     iconUrl: '\img.png',
