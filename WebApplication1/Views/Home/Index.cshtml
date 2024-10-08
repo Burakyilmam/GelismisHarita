@@ -221,27 +221,27 @@
         } else {
             console.error('Tarayıcınız Geolocation API Desteklemiyor.');
         }
-        // Yön Tarifi Rotasını Güncelle
-        function updateRouting(userLatLng) {
-            map.eachLayer(function (layer) {
-                if (layer instanceof L.Routing.Control) {
-                    map.removeLayer(layer);
-                }
-            });
-            var targetLatLng = L.latLng(40.18869647290294, 29.054207783048007);
-            L.Routing.control({
-                waypoints: [
-                    userLatLng,
-                    targetLatLng
-                ],
-                routeWhileDragging: true,
-                router: L.Routing.osrmv1({
-                    language: 'tr', // tr - en vb.
-                    profile: 'driving', //driving - walking - cycling
-                    units: 'metric' // imperial - metric
-                })
-            }).addTo(map);
-        }
+        // // Yön Tarifi Rotasını Güncelle
+        // function updateRouting(userLatLng) {
+        //     map.eachLayer(function (layer) {
+        //         if (layer instanceof L.Routing.Control) {
+        //             map.removeLayer(layer);
+        //         }
+        //     });
+        //     var targetLatLng = L.latLng(40.18869647290294, 29.054207783048007);
+        //     L.Routing.control({
+        //         waypoints: [
+        //             userLatLng,
+        //             targetLatLng
+        //         ],
+        //         routeWhileDragging: true,
+        //         router: L.Routing.osrmv1({
+        //             language: 'tr', // tr - en vb.
+        //             profile: 'driving', //driving - walking - cycling
+        //             units: 'metric' // imperial - metric
+        //         })
+        //     }).addTo(map);
+        // }
 
         // Kullanıcı İkonu
         var userIcon = L.icon({
@@ -281,7 +281,6 @@
                     map.setView(location, 15);
                 })
                 .catch(error => console.error('Adres alınamadı:', error));
-            //Harita Görüş Alanı Ayarlama
             map.setView(location, 15);
 
             var shapeType = document.getElementById('typeInput').value;
@@ -298,7 +297,7 @@
             console.error('Geolocation error: ' + error.message);
         });
 
-        // // Google Direction API Kullanarak Yol Tarifi
+        // Google Maps Direction API Kullanarak Yol Tarifi
         // function getDirections(userLat, userLng, pharmacyLoc) {
         //     var userLocation = L.latLng(userLatitude, userLongitude);
         //     var pharmacyLocation = L.latLng(
@@ -311,47 +310,84 @@
         //     console.log(directionsURL);
         //     window.location.href = directionsURL;
         // }
-        // // Eczane İkonu
-        // var pharmacyIcon = L.icon({
-        //     iconUrl: '\img.png',
-        //     iconSize: [32, 32],
-        //     iconAnchor: [16, 32],
-        //     popupAnchor: [0, -32]
-        // });
 
-        // var pharmacyMarkers = [];
+        var routingControl = null;
+        // Leaflet Routing Machine ile rota çizme fonksiyonu
+        function getDirections(pharmacyLat, pharmacyLng) {
+            navigator.geolocation.getCurrentPosition(function (position) {
+                var userLatLng = L.latLng(position.coords.latitude, position.coords.longitude);
+                var pharmacyLatLng = L.latLng(pharmacyLat, pharmacyLng);
 
-        // function removeAllMarkers() {
-        //     pharmacyMarkers.forEach(function (marker) {
-        //         marker.remove();
-        //     });
-        // }
+                if (routingControl) {
+                    map.removeControl(routingControl);
+                }
 
-        // // Eczaneleri Harita Üzerinde Gösterme
-        // var pharmaciesData = @Html.Raw((ViewBag.PharmaciesData));
+                routingControl = L.Routing.control({
+                    waypoints: [
+                        userLatLng,
+                        pharmacyLatLng
+                    ],
+                    routeWhileDragging: true,
+                    router: L.Routing.osrmv1({
+                        language: 'tr',
+                        profile: 'driving',
+                        units: 'metric'
+                    })
+                }).addTo(map);
+            });
+        }
+        // Eczane İkonu
+        var pharmacyIcon = L.icon({
+            iconUrl: '\img.png',
+            iconSize: [32, 32],
+            iconAnchor: [16, 32],
+            popupAnchor: [0, -32]
+        });
 
-        // console.log(pharmaciesData);
+        var pharmacyMarkers = [];
 
-        // pharmaciesData.result.forEach(function (pharmacy) {
-        //     var loc = pharmacy.loc.split(',').map(coord => coord.trim());
-        //     if (loc.length === 2) {
-        //         var lat = parseFloat(loc[0]);
-        //         var lng = parseFloat(loc[1]);
-        //         var latLng = new L.LatLng(lat, lng);
-        //         console.log(latLng);
-        //     }
-        //     console.log(pharmacy.name,pharmacy.address, loc[0],loc[1]);
-        //     var marker = L.marker(latLng, { icon: pharmacyIcon }).addTo(map);
+        function removeAllMarkers() {
+            pharmacyMarkers.forEach(function (marker) {
+                marker.remove();
+            });
+        }
 
-        //     pharmacyMarkers.push(marker);
+        // Eczaneleri Harita Üzerinde Gösterme
+        var pharmaciesData = @Html.Raw((ViewBag.PharmaciesData));
 
-        //     marker.bindPopup(
-        //         '<b><center>Konum Bilgileri</center></b>' +
-        //         '<b style="color:blue">' + pharmacy.name + '</b><br>' +
-        //         '<b>Adres</b> <br>' + pharmacy.address + '<br>' +
-        //         '<b>Telefon</b> <br>' + pharmacy.phone + '<br>' +
-        //         '<center><button style="padding:5px 10px;background-color:green;border:none;color:White;cursor:pointer" onclick="getDirections(' + latLng.lat + ',' + latLng.lng + ',\'' + pharmacy.loc + '\')">Yol Tarifi</button></center>'
-        //     );
-        // });
+        console.log(pharmaciesData);
+
+        pharmaciesData.result.forEach(function (pharmacy) {
+            var loc = pharmacy.loc.split(',').map(coord => coord.trim());
+            if (loc.length === 2) {
+                var lat = parseFloat(loc[0]);
+                var lng = parseFloat(loc[1]);
+                var latLng = new L.LatLng(lat, lng);
+                console.log(latLng);
+            }
+            console.log(pharmacy.name,pharmacy.address, loc[0],loc[1]);
+            var marker = L.marker(latLng, { icon: pharmacyIcon }).addTo(map);
+
+            pharmacyMarkers.push(marker);
+
+            // Google Direction API kullanarak yönlendirme
+            // marker.bindPopup(
+            //     '<b><center>Konum Bilgileri</center></b>' +
+            //     '<b style="color:blue">' + pharmacy.name + '</b><br>' +
+            //     '<b>Adres</b> <br>' + pharmacy.address + '<br>' +
+            //     '<b>Telefon</b> <br>' + pharmacy.phone + '<br>' +
+            //     '<center><button style="padding:5px 10px;background-color:green;border:none;color:White;cursor:pointer" onclick="getDirections(' + latLng.lat + ',' + latLng.lng + ',\'' + pharmacy.loc + '\')">Yol Tarifi</button></center>'
+            // );
+
+            // Leaflet Routing Machine kullanarak yönlendirme
+            marker.bindPopup(
+                '<b><center>Konum Bilgileri</center></b>' +
+                '<b style="color:blue">' + pharmacy.name + '</b><br>' +
+                '<b>Adres</b> <br>' + pharmacy.address + '<br>' +
+                '<b>Telefon</b> <br>' + pharmacy.phone + '<br>' +
+                '<center><button style="padding:5px 10px;background-color:green;border:none;color:White;cursor:pointer" ' +
+                'onclick="getDirections(' + latLng.lat + ',' + latLng.lng + ')">Yol Tarifi</button></center>'
+            );
+        });
     </script>
 </body>
