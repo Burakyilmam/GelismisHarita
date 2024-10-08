@@ -267,10 +267,14 @@
                     var address = data.display_name;
                     var streetViewUrl = 'https://maps.googleapis.com/maps/api/streetview?size=600x300&location=' + userLatitude + ',' + userLongitude;
 
-                    var popupContent = '<b><center>Konum Bilgileri</center></b>' +
-                        '<b>Adres</b> <br>' + address + '<br>' +
-                        '<b>Koordinat</b><br> ' + userLatitude + ', ' + userLongitude;
-                    '<img src="' + streetViewUrl + '" alt="Bina Fotoğrafı" style="width: 100%; max-width: 600px;">';
+                    var popupContent = '<div style="width: 200px; font-family: Arial, sans-serif;">' +
+                        '<b style="font-size: 16px; color: #333; text-align: center; display: block;">Konum Bilgileri</b>' +
+                        '<div style="margin-top: 10px; color: #666;">' +
+                        '<b style="color: #333">Adres:</b><br>' + address + '<br>' +
+                        '<b style="color: #333">Koordinat:</b><br>' + userLatitude + ', ' + userLongitude +
+                        '</div>' +
+                        //'<img src="' + streetViewUrl + '" alt="Bina Fotoğrafı" style="width: 100%; max-width: 600px; border-radius: 5px; margin-top: 10px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);">' +
+                        '</div>';
 
                     userLocationMarker.bindPopup(popupContent);
 
@@ -298,22 +302,23 @@
         });
 
         // Google Maps Direction API Kullanarak Yol Tarifi
-        // function getDirections(userLat, userLng, pharmacyLoc) {
-        //     var userLocation = L.latLng(userLatitude, userLongitude);
-        //     var pharmacyLocation = L.latLng(
-        //         parseFloat(pharmacyLoc.split(',')[0]),
-        //         parseFloat(pharmacyLoc.split(',')[1])
-        //     );
-        //     var directionsURL = 'https://www.google.com/maps/dir/?api=1' +
-        //         '&origin=' + userLocation.lat + ',' + userLocation.lng +
-        //         '&destination=' + pharmacyLocation.lat + ',' + pharmacyLocation.lng;
-        //     console.log(directionsURL);
-        //     window.location.href = directionsURL;
-        // }
+        function getDirectionGoogleMaps(userLat, userLng, pharmacyLoc) {
+            var userLocation = L.latLng(userLatitude, userLongitude);
+            var pharmacyLocation = L.latLng(
+                parseFloat(pharmacyLoc.split(',')[0]),
+                parseFloat(pharmacyLoc.split(',')[1])
+            );
+            var directionsURL = 'https://www.google.com/maps/dir/?api=1' +
+                '&origin=' + userLocation.lat + ',' + userLocation.lng +
+                '&destination=' + pharmacyLocation.lat + ',' + pharmacyLocation.lng;
+            console.log(directionsURL);
+            window.open(directionsURL, '_blank');
+        }
 
         var routingControl = null;
+
         // Leaflet Routing Machine ile rota çizme fonksiyonu
-        function getDirections(pharmacyLat, pharmacyLng) {
+        function getDirectionLeaflet(pharmacyLat, pharmacyLng) {
             navigator.geolocation.getCurrentPosition(function (position) {
                 var userLatLng = L.latLng(position.coords.latitude, position.coords.longitude);
                 var pharmacyLatLng = L.latLng(pharmacyLat, pharmacyLng);
@@ -328,6 +333,9 @@
                         pharmacyLatLng
                     ],
                     routeWhileDragging: true,
+                    createMarker: function () {
+                        return null;
+                    },
                     router: L.Routing.osrmv1({
                         language: 'tr',
                         profile: 'driving',
@@ -370,23 +378,22 @@
 
             pharmacyMarkers.push(marker);
 
-            // Google Direction API kullanarak yönlendirme
-            // marker.bindPopup(
-            //     '<b><center>Konum Bilgileri</center></b>' +
-            //     '<b style="color:blue">' + pharmacy.name + '</b><br>' +
-            //     '<b>Adres</b> <br>' + pharmacy.address + '<br>' +
-            //     '<b>Telefon</b> <br>' + pharmacy.phone + '<br>' +
-            //     '<center><button style="padding:5px 10px;background-color:green;border:none;color:White;cursor:pointer" onclick="getDirections(' + latLng.lat + ',' + latLng.lng + ',\'' + pharmacy.loc + '\')">Yol Tarifi</button></center>'
-            // );
-
-            // Leaflet Routing Machine kullanarak yönlendirme
             marker.bindPopup(
-                '<b><center>Konum Bilgileri</center></b>' +
-                '<b style="color:blue">' + pharmacy.name + '</b><br>' +
-                '<b>Adres</b> <br>' + pharmacy.address + '<br>' +
-                '<b>Telefon</b> <br>' + pharmacy.phone + '<br>' +
-                '<center><button style="padding:5px 10px;background-color:green;border:none;color:White;cursor:pointer" ' +
-                'onclick="getDirections(' + latLng.lat + ',' + latLng.lng + ')">Yol Tarifi</button></center>'
+                '<div style="width: 200px; font-family: Arial, sans-serif;">' +
+                '<div style="padding: 10px; box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1); border-radius: 5px;">' +
+                '<b style="font-size: 16px; color: #333; text-align: center; display: block;">' + pharmacy.name + '</b>' +
+                '<div style="margin-top: 10px; color: #666;">' +
+                '<b style="color: #333;">Adres:</b><br> ' + pharmacy.address + '<br>' +
+                '<b style="color: #333;">Telefon:</b><br> ' + pharmacy.phone +
+                '</div>' +
+                '<center>' +
+                '<button style="padding: 5px 10px; background-color: green; border: none; color: white; border-radius: 5px; cursor: pointer; margin: 2px;" ' +
+                'onclick="getDirectionLeaflet(' + latLng.lat + ',' + latLng.lng + ')">Yol Tarifi (Leaflet)</button>' +
+                '<button style="padding: 5px 10px; background-color: #007BFF; border: none; color: white; border-radius: 5px; cursor: pointer; margin: 2px;" ' +
+                'onclick="getDirectionGoogleMaps(' + latLng.lat + ',' + latLng.lng + ',\'' + pharmacy.loc + '\')">Yol Tarifi (Google Maps)</button>' +
+                '</center>' +
+                '</div>' +
+                '</div>'
             );
         });
     </script>
