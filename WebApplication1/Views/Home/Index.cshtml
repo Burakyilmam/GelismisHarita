@@ -404,6 +404,7 @@
             marker.on('click', function () {
                 if (!marker.isPopupOpen()) {
                     marker.bindPopup(popup).openPopup();
+                    makeDraggable(marker.getPopup());
                 } else {
                     marker.closePopup();
                 }
