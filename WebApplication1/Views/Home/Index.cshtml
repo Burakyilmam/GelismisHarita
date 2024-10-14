@@ -32,10 +32,11 @@
         #title, #note {
             width: 100%;
         }
-        #note{
-            resize:none;
-            height:150px;
-            margin-top:8px;
+
+        #note {
+            resize: none;
+            height: 150px;
+            margin-top: 8px;
         }
 
         .popup-form button {
@@ -50,8 +51,8 @@
             border-radius: 5px;
             width: 150;
             text-align: center;
-            margin-top:8px;
-            border:none;
+            margin-top: 8px;
+            border: none;
         }
 
     </style>
@@ -373,12 +374,12 @@
                 var latLng = new L.LatLng(lat, lng);
                 console.log(latLng);
             }
-            console.log(pharmacy.name,pharmacy.address, loc[0],loc[1]);
+            console.log(pharmacy.name, pharmacy.address, loc[0], loc[1]);
             var marker = L.marker(latLng, { icon: pharmacyIcon }).addTo(map);
 
             pharmacyMarkers.push(marker);
-
-            marker.bindPopup(
+            // Aynı anda birden fazla popup açabilme özelliği
+            var popupContent =
                 '<div style="width: 200px; font-family: Arial, sans-serif;">' +
                 '<div style="padding: 10px; box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1); border-radius: 5px;">' +
                 '<b style="font-size: 16px; color: #333; text-align: center; display: block;">' + pharmacy.name + '</b>' +
@@ -393,8 +394,43 @@
                 'onclick="getDirectionGoogleMaps(' + latLng.lat + ',' + latLng.lng + ',\'' + pharmacy.loc + '\')">Yol Tarifi (Google Maps)</button>' +
                 '</center>' +
                 '</div>' +
-                '</div>'
-            );
+                '</div>';
+
+            var popup = L.popup({
+                closeOnClick: false,
+                autoClose: false
+            }).setContent(popupContent);
+
+            marker.on('click', function () {
+                if (!marker.isPopupOpen()) {
+                    marker.bindPopup(popup).openPopup();
+                } else {
+                    marker.closePopup();
+                }
+            });
+
+            marker.on('popupclose', function () {
+                marker.unbindPopup();
+            });
+
+            // Sadece 1 popup açılabilme özelliği
+            // marker.bindPopup(
+            //     '<div style="width: 200px; font-family: Arial, sans-serif;">' +
+            //     '<div style="padding: 10px; box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1); border-radius: 5px;">' +
+            //     '<b style="font-size: 16px; color: #333; text-align: center; display: block;">' + pharmacy.name + '</b>' +
+            //     '<div style="margin-top: 10px; color: #666;">' +
+            //     '<b style="color: #333;">Adres:</b><br> ' + pharmacy.address + '<br>' +
+            //     '<b style="color: #333;">Telefon:</b><br> ' + pharmacy.phone +
+            //     '</div>' +
+            //     '<center>' +
+            //     '<button style="padding: 5px 10px; background-color: green; border: none; color: white; border-radius: 5px; cursor: pointer; margin: 2px;" ' +
+            //     'onclick="getDirectionLeaflet(' + latLng.lat + ',' + latLng.lng + ')">Yol Tarifi (Leaflet)</button>' +
+            //     '<button style="padding: 5px 10px; background-color: #007BFF; border: none; color: white; border-radius: 5px; cursor: pointer; margin: 2px;" ' +
+            //     'onclick="getDirectionGoogleMaps(' + latLng.lat + ',' + latLng.lng + ',\'' + pharmacy.loc + '\')">Yol Tarifi (Google Maps)</button>' +
+            //     '</center>' +
+            //     '</div>' +
+            //     '</div>'
+            // );
         });
     </script>
 </body>
