@@ -1,0 +1,54 @@
+﻿#filterContainer {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(255, 255, 255, 0.8);
+    border-radius: 5px;
+    padding: 15px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+}
+
+    #filterContainer input {
+        margin-left: 7px;
+        border: 1px solid orangered;
+        outline: none;
+        padding: 3px;
+    }
+
+    #filterContainer button {
+        margin-left: -5px;
+        padding: 5px 10px;
+        background-color: orangered;
+        color: white;
+        border: none;
+        border-radius: 2px;
+        cursor: pointer;
+    }
+
+        #filterContainer button:hover {
+            background-color: darkorange;
+        }
+
+        #filterContainer button:active {
+            transform: scale(0.95);
+        }
+
+#distanceLabel {
+    display: block;
+    margin-left: 7px;
+    margin-bottom: 10px;
+}
+@media (max-width: 600px) {
+    #filterContainer {
+        width: 90%;
+        padding: 10px;
+    }
+
+        #filterContainer input,
+        #filterContainer button {
+            width: 100%;
+            margin: 5px 0;
+        }
+}
