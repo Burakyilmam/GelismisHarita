@@ -281,6 +281,7 @@
 
                     userLocationMarker.on('click', function () {
                         userLocationMarker.openPopup();
+                        makeDraggable(userLocationMarker.getPopup())
                     });
                     //Harita Görüş Alanı Ayarlama
                     map.setView(location, 15);
