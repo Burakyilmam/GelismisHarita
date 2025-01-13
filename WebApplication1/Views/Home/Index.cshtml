@@ -5,6 +5,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet-draw/dist/leaflet.draw.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
 <link rel="stylesheet" href="/css/SearchBar.css" />
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" />
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-draw/dist/leaflet.draw.js"></script>
@@ -66,10 +67,40 @@
             margin-top: 8px;
             border: none;
         }
+
+        #onDutyTable tbody tr {
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+            #onDutyTable tbody tr:nth-child(odd):hover {
+                background-color: silver;
+                color: #ffffff;
+            }
+
+            #onDutyTable tbody tr:nth-child(even):hover {
+                background-color: #444444;
+                color: #ffffff;
+            }
     </style>
 </head>
 <body>
     <div id="map"></div>
+    <div id="pharmacyTable">
+        <table id="onDutyTable" class="table table-bordered table-striped">
+            <thead>
+                <tr class="text-center bg-dark text-white">
+                    <th>Ad</th>
+                    <th>Adres</th>
+                    <th>Telefon</th>
+                    <th>Mesafe (km)</th>
+                    <th>Yol Tarifi</th>
+                </tr>
+            </thead>
+            <tbody class="text-center   ">
+                <!-- Nöbetçi eczaneler buraya eklenecek -->
+            </tbody>
+        </table>
+    </div>
 
     <form method="post" action="/Home/SaveDrawing">
         <input type="hidden" name="Coordinates" id="coordinatesInput" value="" />
@@ -96,6 +127,11 @@
     </div>
 
     <script>
+
+        window.onload = function () {
+            filterPharmacies();
+        }
+
         // Harita Getirme
         var openstreetmapUrl = 'http:{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
             openstreetmap = L.tileLayer(openstreetmapUrl, { maxZoom: 18 }),
@@ -388,6 +424,9 @@
 
         function filterPharmacies() {
             const distance = parseFloat(document.getElementById('distance').value) || 0;
+            const isDistanceEmptyOrZero = distance === '' || parseFloat(distance) === 0;
+            const tableBody = document.getElementById('onDutyTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = '';
 
             removeAllMarkers();
 
@@ -402,7 +441,7 @@
 
                     const distanceToPharmacy = userLatLng.distanceTo(pharmacyLatLng) / 1000;
 
-                    if (distanceToPharmacy <= distance) {
+                    if (isDistanceEmptyOrZero || distanceToPharmacy <= parseFloat(distance)) {
                         var marker = L.marker(pharmacyLatLng, { icon: pharmacyIcon }).addTo(map);
                         pharmacyMarkers.push(marker);
                         // Aynı anda birden fazla popup açabilme özelliği
@@ -440,10 +479,36 @@
                         marker.on('popupclose', function () {
                             marker.unbindPopup();
                         });
+
+                        const row = tableBody.insertRow();
+                        row.innerHTML = `
+                            <td>${pharmacy.name}</td>
+                            <td>${pharmacy.address}</td>
+                            <td>${pharmacy.phone}</td>
+                            <td>${distanceToPharmacy.toFixed(2)} km</td>
+                            <td><button class="btn btn-success" onclick="getDirectionLeaflet(${lat}, ${lng})">Yol Tarifi (Leaflet)</button>
+                                <button class="btn btn-primary" onclick="getDirectionGoogleMaps(${lat}, ${lng}, '${pharmacy.loc}')">Yol Tarifi (Google Maps)</button></td>
+                        `;
+
+                        row.addEventListener('click', function () {
+                            map.setView(pharmacyLatLng, 15);
+                            marker.openPopup();
+
+                            const mapElement = document.getElementById('map');
+                            if (mapElement) {
+                                const rect = mapElement.getBoundingClientRect();
+                                const scrollPosition = rect.top + window.pageYOffset;
+                                window.scrollTo({
+                                    top: scrollPosition - 20,
+                                    behavior: 'smooth'
+                                });
+                            }
+                        });
                     }
                 });
             });
         }
+
         pharmaciesData.result.forEach(function (pharmacy) {
             var loc = pharmacy.loc.split(',').map(coord => coord.trim());
             if (loc.length === 2) {
