@@ -19,7 +19,8 @@ namespace WebApplication1.Controllers
 
             var client = _clientFactory.CreateClient();
             var apiUrl = "https://api.collectapi.com/health/dutyPharmacy?ilce=&il=Bursa";
-            var apiKey = "4EQNXyQGFje6jy1UYMP6V2:0C6EifM0zBqlOi6Dta9goe";
+            //var apiKey = "4EQNXyQGFje6jy1UYMP6V2:0C6EifM0zBqlOi6Dta9goe";
+            var apiKey = "";
 
             client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("apikey", apiKey);
 

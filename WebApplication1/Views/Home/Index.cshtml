@@ -81,18 +81,42 @@
                 background-color: #444444;
                 color: #ffffff;
             }
+
+        th.sortable {
+            cursor: pointer;
+        }
+
+        .sort-indicator {
+            margin-left: 5px;
+        }
+
+        #searchContainer {
+            text-align: center;
+            padding:15px;
+        }
+
+        #searchInput {
+            padding: 5px;
+            width: 80%;
+            max-width: 400px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
     <div id="map"></div>
+    <div id="searchContainer" class="bg-light">
+        <input type="text" id="searchInput" placeholder="Eczane Adını veya Adresini Yazınız." onkeyup="searchTable()">
+    </div>
     <div id="pharmacyTable">
         <table id="onDutyTable" class="table table-bordered table-striped">
             <thead>
                 <tr class="text-center bg-dark text-white">
-                    <th>Ad</th>
-                    <th>Adres</th>
+                    <th class="sortable" onclick="sortTable('name', this)">Eczane Adı <span class="sort-indicator"></span></th>
+                    <th class="sortable" onclick="sortTable('address', this)">Adres <span class="sort-indicator"></span></th>
                     <th>Telefon</th>
-                    <th>Mesafe (km)</th>
+                    <th class="sortable" onclick="sortTable('distance', this)">Mesafe (km) <span class="sort-indicator"></span></th>
                     <th>Yol Tarifi</th>
                 </tr>
             </thead>
@@ -201,7 +225,6 @@
 
                 var area = turf.area(circle);
                 var newArea = (area / 10000).toFixed(2);
-                console.log('Dairenin Alanı: ' + newArea + ' m²');
 
                 var popupContent = '<b style="color:red;">Daire Bilgileri</b><br>' +
                     '<b>Yarıçap:</b> ' + Math.round(radius) + ' m<br>' +
@@ -255,7 +278,6 @@
             document.getElementById('coordinatesInput').value = JSON.stringify(coordinates);
             document.getElementById('typeInput').value = shapeType;
 
-            //console.log(coordinates);
         });
 
         // Kullanıcı Konumu Alma
@@ -368,7 +390,6 @@
             var directionsURL = 'https://www.google.com/maps/dir/?api=1' +
                 '&origin=' + userLocation.lat + ',' + userLocation.lng +
                 '&destination=' + pharmacyLocation.lat + ',' + pharmacyLocation.lng;
-            console.log(directionsURL);
             window.open(directionsURL, '_blank');
         }
 
@@ -410,10 +431,11 @@
         });
 
         // Eczaneleri Harita Üzerinde Gösterme
-        var pharmaciesData = @Html.Raw((ViewBag.PharmaciesData));
+        var pharmaciesData = { "success": true, "result": [{ "name": "ELİF ECZANESİ", "dist": "İNEGÖL", "address": "HAMİDİYE MAH. KASIM EFENDİ CAD. NO:102-1/A POSTA KODU:16400", "phone": "2247112417", "loc": "40.07335797,29.51393004" }, { "name": "ÇELEBİ ECZANESİ", "dist": "YILDIRIM", "address": "ERTUĞRULGAZİ MAH. OKUL SOK. NO:11/A POSTA KODU:16320", "phone": "2243690740", "loc": "40.177576,29.114966" }, { "name": "GÜLŞAH ECZANESİ", "dist": "GÜRSU", "address": "KURTULUŞ MAH. ATATÜRK CAD. NO:130/A POSTA KODU:16580", "phone": "2243719020", "loc": "40.211794,29.191923" }, { "name": "AYLA ECZANESİ", "dist": "KESTEL", "address": "VANİ MEHMET MAH. HAKİM AYTEKİN BAYSAL SOK. NO:7/A 16450", "phone": "2243722733", "loc": "40.19941,29.213327" }, { "name": "SEDA ECZANESİ", "dist": "GEMLİK", "address": "EŞREF DİNÇER MAH. KESTANE SOK. NO:20 POSTA KODU:16600", "phone": "2245137068", "loc": "40.43292498,29.16151992" }, { "name": "UYSAL ECZANESİ", "dist": "İZNİK", "address": "MAHMUT ÇELEBİ MAH. KILIÇASLAN CAD. NO:2/6-A POSTA KODU:16860", "phone": "2247571291", "loc": "40.42868796,29.71984392" }, { "name": "ÇINAR ECZANESİ", "dist": "KELES", "address": "CUMA MAH. TAHİR HOCA CAD. NO:1 POSTA KODU:16740", "phone": "2248613072", "loc": "39.913164,29.23273008" }, { "name": "GÜLSER ECZANESİ", "dist": "MUSTAFAKEMALPAŞA", "address": "HAMZABEY MAH. HÜSEYİN ÖZLÜ SOK. NO:16/A POSTA KODU:16500", "phone": "2246134210", "loc": "40.038822,28.40776308" }, { "name": "YALÇIN ECZANESİ", "dist": "ORHANELİ", "address": "İSMETPAŞA MAH. CAMİ KARŞISI SOK. NO:3 POSTA KODU:16980", "phone": "2248171286", "loc": "39.90240297,28.98882612" }, { "name": "KUTLUAY ECZANESİ", "dist": "MUDANYA", "address": "EĞİTİM MAH. LİSE CAD. BAYSAN APT. NO:25/A GÜZELYALI POSTA KODU:16140", "phone": "2244531223", "loc": "40.35121398,28.92850416" }, { "name": "YASEMİN ECZANESİ", "dist": "YENİŞEHİR", "address": "YENİGÜN MAH. GÜL SOK. NO:1 POSTA KODU:16900", "phone": "2247722606", "loc": "40.26824802,29.65202388" }, { "name": "ULAŞ ECZANESİ", "dist": "HARMANCIK", "address": "MERKEZ MAH. FEVZİ PAŞA CAD. NO:9/A POSTA KODU:16770", "phone": "2248812272", "loc": "39.67902702,29.15490204" }, { "name": "KONAK SEVİL ECZANESİ", "dist": "NİLÜFER", "address": "KONAK MAH. BURAK SOK. NO:21/B POSTA KODU:16110", "phone": "2244534180", "loc": "40.209213,28.98711" }, { "name": "DOĞAN ECZANESİ", "dist": "OSMANGAZİ", "address": "BAHAR MAH. NASİP SOK. NO:9 POSTA KODU:16240", "phone": "2242727285", "loc": "40.203136,29.066585" }, { "name": "NİLÜFER MERVE ECZANESİ", "dist": "NİLÜFER", "address": "CUMHURİYET MAH. GAZİ CAD. NO:48/A-B POSTA KODU:16140", "phone": "2244525255", "loc": "40.222018,28.972105" }, { "name": "NARMANLI ECZANESİ", "dist": "NİLÜFER", "address": "YÜZÜNCÜYIL MAH. HAKAN SEPETÇİ CAD. NO:2A/H POSTA KODU:16280", "phone": "2249093569", "loc": "40.216502,28.893327" }, { "name": "MERKEZ BURSA ECZANESİ", "dist": "OSMANGAZİ", "address": "İNTİZAM MAH. İLKBAHAR CAD. 18/A POSTA KODU:16050", "phone": "2242531319", "loc": "40.19448,29.055746" }, { "name": "BATI TRAKYA ECZANESİ", "dist": "YILDIRIM", "address": "YİĞİTLER MAH. TÜRKMENBAŞI CAD. NO:123/A2 POSTA KODU:16290", "phone": "2243420298", "loc": "40.189238,29.154597" }, { "name": "1050 KONUTLAR ECZANESİ", "dist": "OSMANGAZİ", "address": "AKPINAR MAH. HANCI CAD. NO:22/1 POSTA KODU:16160", "phone": "2242422122", "loc": "40.243798,28.972074" }, { "name": "KUZEY ECZANESİ", "dist": "YILDIRIM", "address": "MİLLET MAH. 7202 SOK. NO:4/C POSTA KODU:16260", "phone": "2242120072", "loc": "40.21423,29.095499" }, { "name": "NİLÜFER SU ECZANESİ", "dist": "NİLÜFER", "address": "ÜÇEVLER MAH. ÜLMAN SOK. NO:6/1A POSTA KODU:16270", "phone": "2244414383", "loc": "40.19765,28.948233" }, { "name": "GÜRKAN ECZANESİ", "dist": "NİLÜFER", "address": "ESENTEPE MAH. TUNA CAD. NO:96/A POSTA KODU:16130", "phone": "2242400848", "loc": "40.2243,28.983861" }, { "name": "BEYAZIT ECZANESİ", "dist": "YILDIRIM", "address": "BEYAZIT MAH. EĞİTİM CAD. KASIM ÖNADIM BULVARI NO:15 POSTA KODU:16330", "phone": "2243641015", "loc": "40.185856,29.100612" }, { "name": "YENİKALE ECZANESİ", "dist": "OSMANGAZİ", "address": "DİKKALDIRIM MAH. HAT CAD. NO:1/1-B POSTA KODU:16090", "phone": "2242364698", "loc": "40.207872,29.018024" }, { "name": "ORHANGAZİ ECZANESİ", "dist": "ORHANGAZİ", "address": "HÜRRİYET MAH. CAMİ SOK. NO:13/B POSTA KODU:16820", "phone": "2245733373", "loc": "40.483893,29.30615" }, { "name": "AKKAYNAK ECZANESİ", "dist": "OSMANGAZİ", "address": "DEMİRTAŞ BARBAROS MAH. CUMHURİYET CAD. NO:1/B POSTA KODU:16245", "phone": "2242622266", "loc": "40.271445,29.093272" }, { "name": "MELİS ECZANESİ", "dist": "GEMLİK", "address": "BALIKPAZARI MAH. YEDİEVLER SOK. NO:59/A POSTA KODU:16600", "phone": "2245135265", "loc": "40.43557899,29.15402688" }, { "name": "HAYAT ECZANESİ", "dist": "KARACABEY", "address": "SIRABADEMLER MAH. ORTAOKUL CAD. NO:76 POSTA KODU:16700", "phone": "2246600006", "loc": "40.21101801,28.36103292" }, { "name": "GİZEM NUR ECZANESİ", "dist": "OSMANGAZİ", "address": "ELMASBAHÇELER MAH. GAZLI SOK. NO:68/A POSTA KODU:16230", "phone": "2242513210", "loc": "40.192146,29.076706" }, { "name": "NARLI ECZANESİ", "dist": "OSMANGAZİ", "address": "YUNUSELİ MAH. YUNUSELİ BULVARI NO:195/B POSTA KODU:16104", "phone": "2242484898", "loc": "40.248124,29.015635" }, { "name": "YENİ ORHAN ECZANESİ", "dist": "BÜYÜKORHAN", "address": "ORHAN MAH. DR.İBRAHİM ÖKTEM CAD. NO:35 POSTA KODU:16990", "phone": "5062260344", "loc": "39.77504298,28.88199504" }, { "name": "TUBA GÜMÜŞ ECZANESİ", "dist": "İNEGÖL", "address": "BURHANİYE MAH. KEMALETTİN SAMİ PAŞA CAD. NO:30 POSTA KODU:16400", "phone": "2247156368", "loc": "40.08051396,29.50676712" }, { "name": "ZÜMRÜT ECZANESİ", "dist": "İNEGÖL", "address": "HAMİDİYE MAH. HASTANE CAD. NO:35/C POSTA KODU:16400", "phone": "5312394404", "loc": "40.10166999,29.52455688" }, { "name": "AKÇALAR ECZANESİ", "dist": "NİLÜFER", "address": "AKÇALAR MAH. KANAL(660) CAD. NO:14/B/A POSTA KODU:16225", "phone": "2244885086", "loc": "40.176073,28.744807" }, { "name": "BİLGİN ECZANESİ", "dist": "MUDANYA", "address": "ÖMERBEY MAH. DENİZ CAD. 2.BARIŞ SOK. AKARSU SİTESİ C-BLOK NO:4B POSTA KODU:16940", "phone": "2245448474", "loc": "40.369699,28.891523" }, { "name": "FLORA ECZANESİ", "dist": "NİLÜFER", "address": "23 NİSAN MAH. KÖROĞLU CAD. NO:5B/B POSTA KODU:16090", "phone": "2249090216", "loc": "40.217581,28.945144" }] };
+        //var pharmaciesData = @Html.Raw((ViewBag.PharmaciesData));
         var pharmacyMarkers = [];
 
-        console.log(pharmaciesData);
+        //console.log(pharmaciesData);
 
         function removeAllMarkers() {
             pharmacyMarkers.forEach(marker => {
@@ -421,7 +443,7 @@
             });
             pharmacyMarkers = [];
         }
-
+        // Eczaneleri Filtreleme
         function filterPharmacies() {
             const distance = parseFloat(document.getElementById('distance').value) || 0;
             const isDistanceEmptyOrZero = distance === '' || parseFloat(distance) === 0;
@@ -479,12 +501,12 @@
                         marker.on('popupclose', function () {
                             marker.unbindPopup();
                         });
-
+                        var formattedPhone = formatPhoneNumber(pharmacy.phone);
                         const row = tableBody.insertRow();
                         row.innerHTML = `
                             <td>${pharmacy.name}</td>
                             <td>${pharmacy.address}</td>
-                            <td>${pharmacy.phone}</td>
+                            <td>${formattedPhone}</td>
                             <td>${distanceToPharmacy.toFixed(2)} km</td>
                             <td><button class="btn btn-success" onclick="getDirectionLeaflet(${lat}, ${lng})">Yol Tarifi (Leaflet)</button>
                                 <button class="btn btn-primary" onclick="getDirectionGoogleMaps(${lat}, ${lng}, '${pharmacy.loc}')">Yol Tarifi (Google Maps)</button></td>
@@ -508,6 +530,98 @@
                 });
             });
         }
+        // Telefon Numarası Özel Format
+        function formatPhoneNumber(phoneNumber) {
+            const cleaned = ('' + phoneNumber).replace(/\D/g, '');
+            const match = cleaned.match(/^(\d{3})(\d{3})(\d{2})(\d{2})$/);
+            if (match) {
+                return `(${"0" + match[1]}) ${match[2]} ${match[3]} ${match[4]}`;
+            }
+            return phoneNumber;
+        }
+
+
+        let sortOrder = 'asc';
+        let lastSortedColumn = null;
+
+        // Tabloyu sıralama fonksiyonları
+        function sortTable(criteria, thElement) {
+            const tableBody = document.getElementById('onDutyTable').getElementsByTagName('tbody')[0];
+            const rows = Array.from(tableBody.rows);
+
+            let columnIndex;
+            switch (criteria) {
+                case 'name':
+                    columnIndex = 0;
+                    break;
+                case 'address':
+                    columnIndex = 1;
+                    break;
+                case 'phone':
+                    columnIndex = 2;
+                    break;
+                case 'distance':
+                    columnIndex = 3;
+                    break;
+                default:
+                    return;
+            }
+
+            rows.sort((a, b) => {
+                let valueA = a.cells[columnIndex].innerText.toLowerCase();
+                let valueB = b.cells[columnIndex].innerText.toLowerCase();
+
+                if (criteria === 'distance') {
+                    valueA = parseFloat(valueA);
+                    valueB = parseFloat(valueB);
+                    return sortOrder === 'asc' ? valueA - valueB : valueB - valueA;
+                } else {
+                    return sortOrder === 'asc' ? valueA.localeCompare(valueB) : valueB.localeCompare(valueA);
+                }
+            });
+
+            sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+
+            rows.forEach(row => tableBody.appendChild(row));
+
+            SortIndicators(thElement);
+        }
+
+        function SortIndicators(thElement) {
+            if (lastSortedColumn) {
+                lastSortedColumn.querySelector('.sort-indicator').innerHTML = '';
+            }
+
+            const indicator = thElement.querySelector('.sort-indicator');
+            if (sortOrder === 'asc') {
+                indicator.innerHTML = '▲';
+            } else {
+                indicator.innerHTML = '▼';
+            }
+
+            lastSortedColumn = thElement;
+        }
+        // Eczane Adına veya Adresine Göre Gerçek Zamanlı Arama Yapma
+        function searchTable() {
+            const input = document.getElementById('searchInput');
+            const filter = input.value.toLowerCase();
+            const tableBody = document.getElementById('onDutyTable').getElementsByTagName('tbody')[0];
+            const rows = Array.from(tableBody.rows);
+
+            rows.forEach(row => {
+                const nameCell = row.cells[0];
+                const addressCell = row.cells[1];
+                if (nameCell || addressCell) {
+                    const name = nameCell ? nameCell.innerText.toLowerCase() : '';
+                    const address = addressCell ? addressCell.innerText.toLowerCase() : '';
+                    if (name.includes(filter) || address.includes(filter)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                }
+            });
+        }
 
         pharmaciesData.result.forEach(function (pharmacy) {
             var loc = pharmacy.loc.split(',').map(coord => coord.trim());
@@ -515,7 +629,6 @@
                 var lat = parseFloat(loc[0]);
                 var lng = parseFloat(loc[1]);
                 var latLng = new L.LatLng(lat, lng);
-                console.log(latLng);
 
                 var marker = L.marker(latLng, { icon: pharmacyIcon }).addTo(map);
                 pharmacyMarkers.push(marker);
