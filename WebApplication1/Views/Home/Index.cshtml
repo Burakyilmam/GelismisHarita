@@ -435,13 +435,32 @@
         //var pharmaciesData = @Html.Raw((ViewBag.PharmaciesData));
         var pharmacyMarkers = [];
 
-        //console.log(pharmaciesData);
 
         function removeAllMarkers() {
             pharmacyMarkers.forEach(marker => {
                 map.removeLayer(marker);
             });
             pharmacyMarkers = [];
+        }
+
+        function GrowMarker(marker) {
+            var growIcon = L.icon({
+                iconUrl: '\img.png',
+                iconSize: [48, 48],
+                iconAnchor: [24, 48],
+                popupAnchor: [0, -48]
+            });
+            marker.setIcon(growIcon);
+        }
+
+        function resetMarkerSize(marker) {
+            var originalIcon = L.icon({
+                iconUrl: '\img.png',
+                iconSize: [32, 32],
+                iconAnchor: [16, 32],
+                popupAnchor: [0, -32]
+            });
+            marker.setIcon(originalIcon);
         }
         // Eczaneleri Filtreleme
         function filterPharmacies() {
@@ -492,14 +511,17 @@
                         marker.on('click', function () {
                             if (!marker.isPopupOpen()) {
                                 marker.bindPopup(popup).openPopup();
+                                GrowMarker(marker);
                                 makeDraggable(marker.getPopup());
                             } else {
                                 marker.closePopup();
+                                resetMarkerSize(marker);
                             }
                         });
 
                         marker.on('popupclose', function () {
                             marker.unbindPopup();
+                            resetMarkerSize(marker);
                         });
                         var formattedPhone = formatPhoneNumber(pharmacy.phone);
                         const row = tableBody.insertRow();
@@ -513,7 +535,13 @@
                         `;
 
                         row.addEventListener('click', function () {
-                            map.setView(pharmacyLatLng, 15);
+                            // Düz Geçiş
+                            //map.setView(pharmacyLatLng, 15);
+                            // Animasyonlu Geçiş
+                            map.flyTo(pharmacyLatLng, 15, {
+                                animate: true,
+                                duration: 1
+                            });
                             marker.openPopup();
 
                             const mapElement = document.getElementById('map');
