@@ -332,7 +332,6 @@
                         '<b style="color: #333">Adres:</b><br>' + address + '<br>' +
                         '<b style="color: #333">Koordinat:</b><br>' + userLatitude + ', ' + userLongitude +
                         '</div>' +
-                        //'<img src="' + streetViewUrl + '" alt="Bina Fotoğrafı" style="width: 100%; max-width: 600px; border-radius: 5px; margin-top: 10px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);">' +
                         '</div>';
 
                     userLocationMarker.bindPopup(popupContent);
@@ -350,16 +349,6 @@
             var shapeType = document.getElementById('typeInput').value;
             var coordinates = document.getElementById('coordinatesInput').value;
         }
-
-        navigator.geolocation.getCurrentPosition(function (position) {
-            var userLatLng = new L.LatLng(position.coords.latitude, position.coords.longitude);
-
-            addUserLocationToMap(userLatLng);
-
-            document.getElementById('coordinatesInput').value = position.coords.latitude + ',' + position.coords.longitude;
-        }, function (error) {
-            console.error('Geolocation error: ' + error.message);
-        });
 
         // Google Maps Direction API Kullanarak Yol Tarifi
         function getDirectionGoogleMaps(userLat, userLng, pharmacyLoc) {
@@ -403,6 +392,7 @@
                 }).addTo(map);
             });
         }
+
         // Eczane İkonu
         var pharmacyIcon = L.icon({
             iconUrl: '\img.png',
@@ -442,8 +432,6 @@
             });
             marker.setIcon(originalIcon);
         }
-
-        let circle = null;
 
         // Eczaneleri Filtreleme
         function filterPharmacies() {
@@ -595,9 +583,7 @@
             });
 
             sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
-
             rows.forEach(row => tableBody.appendChild(row));
-
             SortIndicators(thElement);
         }
 
@@ -617,10 +603,22 @@
 
             lastSortedColumn = thElement;
         }
-        // Eczane Adına veya Adresine Göre Gerçek Zamanlı Arama Yapma
+        // Türkçe karakterleri doğru şekilde küçültme
+        function turkishToLower(str) {
+            const turkishChars = ['ç', 'ı', 'i', 'ğ', 'ö', 'ş', 'ü', 'Ç', 'İ', 'Ğ', 'Ö', 'Ş', 'Ü'];
+            const asciiChars = ['c', 'i', 'i', 'g', 'o', 's', 'u', 'C', 'I', 'G', 'O', 'S', 'U'];
+
+            let result = str;
+            for (let i = 0; i < turkishChars.length; i++) {
+                result = result.replace(new RegExp(turkishChars[i], 'g'), asciiChars[i]);
+            }
+            return result.toLowerCase();
+        }
+
+        // Eczane Arama Fonksiyonu
         function searchTable() {
             const input = document.getElementById('searchInput');
-            const filter = input.value.toLowerCase();
+            const filter = turkishToLower(input.value);
             const tableBody = document.getElementById('onDutyTable').getElementsByTagName('tbody')[0];
             const rows = Array.from(tableBody.rows);
 
@@ -628,8 +626,8 @@
                 const nameCell = row.cells[0];
                 const addressCell = row.cells[1];
                 if (nameCell || addressCell) {
-                    const name = nameCell ? nameCell.innerText.toLowerCase() : '';
-                    const address = addressCell ? addressCell.innerText.toLowerCase() : '';
+                    const name = nameCell ? turkishToLower(nameCell.innerText) : '';
+                    const address = addressCell ? turkishToLower(addressCell.innerText) : '';
                     if (name.includes(filter) || address.includes(filter)) {
                         row.style.display = '';
                     } else {
@@ -638,36 +636,5 @@
                 }
             });
         }
-
-        pharmaciesData.result.forEach(function (pharmacy) {
-            var loc = pharmacy.loc.split(',').map(coord => coord.trim());
-            if (loc.length === 2) {
-                var lat = parseFloat(loc[0]);
-                var lng = parseFloat(loc[1]);
-                var latLng = new L.LatLng(lat, lng);
-
-                var marker = L.marker(latLng, { icon: pharmacyIcon }).addTo(map);
-                pharmacyMarkers.push(marker);
-            }
-
-            // Sadece 1 popup açılabilme özelliği
-            // marker.bindPopup(
-            //     '<div style="width: 200px; font-family: Arial, sans-serif;">' +
-            //     '<div style="padding: 10px; box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1); border-radius: 5px;">' +
-            //     '<b style="font-size: 16px; color: #333; text-align: center; display: block;">' + pharmacy.name + '</b>' +
-            //     '<div style="margin-top: 10px; color: #666;">' +
-            //     '<b style="color: #333;">Adres:</b><br> ' + pharmacy.address + '<br>' +
-            //     '<b style="color: #333;">Telefon:</b><br> ' + pharmacy.phone +
-            //     '</div>' +
-            //     '<center>' +
-            //     '<button style="padding: 5px 10px; background-color: green; border: none; color: white; border-radius: 5px; cursor: pointer; margin: 2px;" ' +
-            //     'onclick="getDirectionLeaflet(' + latLng.lat + ',' + latLng.lng + ')">Yol Tarifi (Leaflet)</button>' +
-            //     '<button style="padding: 5px 10px; background-color: #007BFF; border: none; color: white; border-radius: 5px; cursor: pointer; margin: 2px;" ' +
-            //     'onclick="getDirectionGoogleMaps(' + latLng.lat + ',' + latLng.lng + ',\'' + pharmacy.loc + '\')">Yol Tarifi (Google Maps)</button>' +
-            //     '</center>' +
-            //     '</div>' +
-            //     '</div>'
-            // );
-        });
     </script>
 </body>
