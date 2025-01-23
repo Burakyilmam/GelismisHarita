@@ -496,17 +496,18 @@
                             marker.unbindPopup();
                             resetMarkerSize(marker);
                         });
+
                         var formattedPhone = formatPhoneNumber(pharmacy.phone);
                         const row = tableBody.insertRow();
                         row.innerHTML =
-                        `
-                         <td>${pharmacy.name}</td>
-                         <td>${pharmacy.address}</td>
-                         <td>${formattedPhone}</td>
-                         <td>${distanceToPharmacy.toFixed(2)} km</td>
-                         <td><button class="btn btn-success" onclick="getDirectionLeaflet(${lat}, ${lng})">Yol Tarifi (Leaflet)</button>
-                             <button class="btn btn-primary" onclick="getDirectionGoogleMaps(${lat}, ${lng}, '${pharmacy.loc}')">Yol Tarifi (Google Maps)</button></td>
-                         `;
+                            `
+                                 <td>${pharmacy.name}</td>
+                                 <td>${pharmacy.address}</td>
+                                 <td>${formattedPhone}</td>
+                                 <td>${distanceToPharmacy.toFixed(2)} km</td>
+                                 <td><button class="btn btn-success" onclick="getDirectionLeaflet(${lat}, ${lng})">Yol Tarifi (Leaflet)</button>
+                                     <button class="btn btn-primary" onclick="getDirectionGoogleMaps(${lat}, ${lng}, '${pharmacy.loc}')">Yol Tarifi (Google Maps)</button></td>
+                                 `;
 
                         row.addEventListener('click', function () {
                             // Düz Geçiş
@@ -519,6 +520,7 @@
                             marker.openPopup();
 
                             const mapElement = document.getElementById('map');
+
                             if (mapElement) {
                                 const rect = mapElement.getBoundingClientRect();
                                 const scrollPosition = rect.top + window.pageYOffset;
@@ -617,10 +619,13 @@
 
         // Eczane Arama Fonksiyonu
         function searchTable() {
+
             const input = document.getElementById('searchInput');
             const filter = turkishToLower(input.value);
             const tableBody = document.getElementById('onDutyTable').getElementsByTagName('tbody')[0];
             const rows = Array.from(tableBody.rows);
+
+            removeAllMarkers();
 
             rows.forEach(row => {
                 const nameCell = row.cells[0];
@@ -630,7 +635,82 @@
                     const address = addressCell ? turkishToLower(addressCell.innerText) : '';
                     if (name.includes(filter) || address.includes(filter)) {
                         row.style.display = '';
-                    } else {
+
+                        const pharmaciesFound = pharmaciesData.result.filter(p => {
+                            return turkishToLower(p.name).includes(name) || turkishToLower(p.address).includes(address);
+                        });
+
+                        pharmaciesFound.forEach(pharmacy => {
+                            console.log('Bulunan Eczane:', pharmacy);
+                            const loc = pharmacy.loc.split(',').map(coord => coord.trim());
+                            const lat = parseFloat(loc[0]);
+                            const lng = parseFloat(loc[1]);
+
+                            const pharmacyLatLng = L.latLng(lat, lng);
+                            const marker = L.marker(pharmacyLatLng, { icon: pharmacyIcon }).addTo(map);
+
+                            pharmacyMarkers.push(marker);
+
+                            var popupContent =
+                                '<div style="width: 200px; font-family: Arial, sans-serif;">' +
+                                '<div style="padding: 10px; box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1); border-radius: 5px;">' +
+                                '<b style="font-size: 16px; color: #333; text-align: center; display: block;">' + pharmacy.name + '</b>' +
+                                '<div style="margin-top: 10px; color: #666;">' +
+                                '<b style="color: #333;">Adres:</b><br> ' + pharmacy.address + '<br>' +
+                                '<b style="color: #333;">Telefon:</b><br> ' + pharmacy.phone +
+                                '</div>' +
+                                '<center>' +
+                                '<button style="padding: 5px 10px; background-color: green; border: none; color: white; border-radius: 5px; cursor: pointer; margin: 2px;" ' +
+                                'onclick="getDirectionLeaflet(' + lat + ',' + lng + ')">Yol Tarifi (Leaflet)</button>' +
+                                '<button style="padding: 5px 10px; background-color: #007BFF; border: none; color: white; border-radius: 5px; cursor: pointer; margin: 2px;" ' +
+                                'onclick="getDirectionGoogleMaps(' + lat + ',' + lng + ',\'' + pharmacy.loc + '\')">Yol Tarifi (Google Maps)</button>' +
+                                '</center>' +
+                                '</div>' +
+                                '</div>';
+
+                            var popup = L.popup({
+                                closeOnClick: false,
+                                autoClose: false
+                            }).setContent(popupContent);
+
+                            marker.on('click', function () {
+                                if (!marker.isPopupOpen()) {
+                                    marker.bindPopup(popup).openPopup();
+                                    GrowMarker(marker);
+                                    makeDraggable(marker.getPopup());
+                                } else {
+                                    marker.closePopup();
+                                    resetMarkerSize(marker);
+                                }
+                            });
+
+                            marker.on('popupclose', function () {
+                                marker.unbindPopup();
+                                resetMarkerSize(marker);
+                            });
+
+                            row.addEventListener('click', function () {
+                                map.flyTo(pharmacyLatLng, 15, {
+                                    animate: true,
+                                    duration: 1
+                                });
+                                marker.openPopup();
+
+                                const mapElement = document.getElementById('map');
+
+                                if (mapElement) {
+                                    const rect = mapElement.getBoundingClientRect();
+                                    const scrollPosition = rect.top + window.pageYOffset;
+                                    window.scrollTo({
+                                        top: scrollPosition - 20,
+                                        behavior: 'smooth'
+                                    });
+                                }
+                            });
+
+                        });
+                    }
+                    else {
                         row.style.display = 'none';
                     }
                 }
