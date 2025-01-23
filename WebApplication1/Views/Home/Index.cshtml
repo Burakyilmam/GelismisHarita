@@ -24,6 +24,7 @@
         input[type="number"] {
             -moz-appearance: textfield;
         }
+
         #map {
             height: 600px;
             width: 100%;
@@ -72,6 +73,7 @@
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
+
             #onDutyTable tbody tr:nth-child(odd):hover {
                 background-color: silver;
                 color: #ffffff;
@@ -92,7 +94,7 @@
 
         #searchContainer {
             text-align: center;
-            padding:15px;
+            padding: 15px;
         }
 
         #searchInput {
@@ -299,27 +301,6 @@
         } else {
             console.error('Tarayıcınız Geolocation API Desteklemiyor.');
         }
-        // // Yön Tarifi Rotasını Güncelle
-        // function updateRouting(userLatLng) {
-        //     map.eachLayer(function (layer) {
-        //         if (layer instanceof L.Routing.Control) {
-        //             map.removeLayer(layer);
-        //         }
-        //     });
-        //     var targetLatLng = L.latLng(40.18869647290294, 29.054207783048007);
-        //     L.Routing.control({
-        //         waypoints: [
-        //             userLatLng,
-        //             targetLatLng
-        //         ],
-        //         routeWhileDragging: true,
-        //         router: L.Routing.osrmv1({
-        //             language: 'tr', // tr - en vb.
-        //             profile: 'driving', //driving - walking - cycling
-        //             units: 'metric' // imperial - metric
-        //         })
-        //     }).addTo(map);
-        // }
 
         // Kullanıcı İkonu
         var userIcon = L.icon({
@@ -435,7 +416,6 @@
         //var pharmaciesData = @Html.Raw((ViewBag.PharmaciesData));
         var pharmacyMarkers = [];
 
-
         function removeAllMarkers() {
             pharmacyMarkers.forEach(marker => {
                 map.removeLayer(marker);
@@ -462,6 +442,9 @@
             });
             marker.setIcon(originalIcon);
         }
+
+        let circle = null;
+
         // Eczaneleri Filtreleme
         function filterPharmacies() {
             const distance = parseFloat(document.getElementById('distance').value) || 0;
@@ -470,6 +453,7 @@
             tableBody.innerHTML = '';
 
             removeAllMarkers();
+
 
             navigator.geolocation.getCurrentPosition(function (position) {
                 const userLatLng = L.latLng(position.coords.latitude, position.coords.longitude);
@@ -485,6 +469,7 @@
                     if (isDistanceEmptyOrZero || distanceToPharmacy <= parseFloat(distance)) {
                         var marker = L.marker(pharmacyLatLng, { icon: pharmacyIcon }).addTo(map);
                         pharmacyMarkers.push(marker);
+
                         // Aynı anda birden fazla popup açabilme özelliği
                         var popupContent =
                             '<div style="width: 200px; font-family: Arial, sans-serif;">' +
@@ -525,14 +510,15 @@
                         });
                         var formattedPhone = formatPhoneNumber(pharmacy.phone);
                         const row = tableBody.insertRow();
-                        row.innerHTML = `
-                            <td>${pharmacy.name}</td>
-                            <td>${pharmacy.address}</td>
-                            <td>${formattedPhone}</td>
-                            <td>${distanceToPharmacy.toFixed(2)} km</td>
-                            <td><button class="btn btn-success" onclick="getDirectionLeaflet(${lat}, ${lng})">Yol Tarifi (Leaflet)</button>
-                                <button class="btn btn-primary" onclick="getDirectionGoogleMaps(${lat}, ${lng}, '${pharmacy.loc}')">Yol Tarifi (Google Maps)</button></td>
-                        `;
+                        row.innerHTML =
+                        `
+                         <td>${pharmacy.name}</td>
+                         <td>${pharmacy.address}</td>
+                         <td>${formattedPhone}</td>
+                         <td>${distanceToPharmacy.toFixed(2)} km</td>
+                         <td><button class="btn btn-success" onclick="getDirectionLeaflet(${lat}, ${lng})">Yol Tarifi (Leaflet)</button>
+                             <button class="btn btn-primary" onclick="getDirectionGoogleMaps(${lat}, ${lng}, '${pharmacy.loc}')">Yol Tarifi (Google Maps)</button></td>
+                         `;
 
                         row.addEventListener('click', function () {
                             // Düz Geçiş
@@ -558,6 +544,7 @@
                 });
             });
         }
+
         // Telefon Numarası Özel Format
         function formatPhoneNumber(phoneNumber) {
             const cleaned = ('' + phoneNumber).replace(/\D/g, '');
@@ -567,7 +554,6 @@
             }
             return phoneNumber;
         }
-
 
         let sortOrder = 'asc';
         let lastSortedColumn = null;
@@ -623,8 +609,10 @@
             const indicator = thElement.querySelector('.sort-indicator');
             if (sortOrder === 'asc') {
                 indicator.innerHTML = '▲';
+                indicator.style.color = 'green'
             } else {
                 indicator.innerHTML = '▼';
+                indicator.style.color = 'red';
             }
 
             lastSortedColumn = thElement;
