@@ -69,6 +69,12 @@
             border: none;
         }
 
+        #pharmacyTable {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
         #onDutyTable tbody tr {
             cursor: pointer;
             transition: background-color 0.3s ease;
@@ -108,9 +114,11 @@
 </head>
 <body>
     <div id="map"></div>
+
     <div id="searchContainer" class="bg-light">
         <input type="text" id="searchInput" placeholder="Eczane Adını veya Adresini Yazınız." onkeyup="searchTable()">
     </div>
+
     <div id="pharmacyTable">
         <table id="onDutyTable" class="table table-bordered table-striped">
             <thead>
@@ -122,7 +130,7 @@
                     <th>Yol Tarifi</th>
                 </tr>
             </thead>
-            <tbody class="text-center   ">
+            <tbody class="text-center">
                 <!-- Nöbetçi eczaneler buraya eklenecek -->
             </tbody>
         </table>
@@ -153,33 +161,50 @@
     </div>
 
     <script>
+        var map, drawnItems, openstreetmap, googlemap, userLatitude, userLongitude, userLatLng, userLocationMarker, pharmacyLatLng, routingControl, tableBody, searchinput, rows, popupPharmacyContent;
+        var pharmacyMarkers = [];
+        var pharmaciesTestData = { "success": true, "result": [{ "name": "ELİF ECZANESİ", "dist": "İNEGÖL", "address": "HAMİDİYE MAH. KASIM EFENDİ CAD. NO:102-1/A POSTA KODU:16400", "phone": "2247112417", "loc": "40.07335797,29.51393004" }, { "name": "ÇELEBİ ECZANESİ", "dist": "YILDIRIM", "address": "ERTUĞRULGAZİ MAH. OKUL SOK. NO:11/A POSTA KODU:16320", "phone": "2243690740", "loc": "40.177576,29.114966" }, { "name": "GÜLŞAH ECZANESİ", "dist": "GÜRSU", "address": "KURTULUŞ MAH. ATATÜRK CAD. NO:130/A POSTA KODU:16580", "phone": "2243719020", "loc": "40.211794,29.191923" }, { "name": "AYLA ECZANESİ", "dist": "KESTEL", "address": "VANİ MEHMET MAH. HAKİM AYTEKİN BAYSAL SOK. NO:7/A 16450", "phone": "2243722733", "loc": "40.19941,29.213327" }, { "name": "SEDA ECZANESİ", "dist": "GEMLİK", "address": "EŞREF DİNÇER MAH. KESTANE SOK. NO:20 POSTA KODU:16600", "phone": "2245137068", "loc": "40.43292498,29.16151992" }, { "name": "UYSAL ECZANESİ", "dist": "İZNİK", "address": "MAHMUT ÇELEBİ MAH. KILIÇASLAN CAD. NO:2/6-A POSTA KODU:16860", "phone": "2247571291", "loc": "40.42868796,29.71984392" }, { "name": "ÇINAR ECZANESİ", "dist": "KELES", "address": "CUMA MAH. TAHİR HOCA CAD. NO:1 POSTA KODU:16740", "phone": "2248613072", "loc": "39.913164,29.23273008" }, { "name": "GÜLSER ECZANESİ", "dist": "MUSTAFAKEMALPAŞA", "address": "HAMZABEY MAH. HÜSEYİN ÖZLÜ SOK. NO:16/A POSTA KODU:16500", "phone": "2246134210", "loc": "40.038822,28.40776308" }, { "name": "YALÇIN ECZANESİ", "dist": "ORHANELİ", "address": "İSMETPAŞA MAH. CAMİ KARŞISI SOK. NO:3 POSTA KODU:16980", "phone": "2248171286", "loc": "39.90240297,28.98882612" }, { "name": "KUTLUAY ECZANESİ", "dist": "MUDANYA", "address": "EĞİTİM MAH. LİSE CAD. BAYSAN APT. NO:25/A GÜZELYALI POSTA KODU:16140", "phone": "2244531223", "loc": "40.35121398,28.92850416" }, { "name": "YASEMİN ECZANESİ", "dist": "YENİŞEHİR", "address": "YENİGÜN MAH. GÜL SOK. NO:1 POSTA KODU:16900", "phone": "2247722606", "loc": "40.26824802,29.65202388" }, { "name": "ULAŞ ECZANESİ", "dist": "HARMANCIK", "address": "MERKEZ MAH. FEVZİ PAŞA CAD. NO:9/A POSTA KODU:16770", "phone": "2248812272", "loc": "39.67902702,29.15490204" }, { "name": "KONAK SEVİL ECZANESİ", "dist": "NİLÜFER", "address": "KONAK MAH. BURAK SOK. NO:21/B POSTA KODU:16110", "phone": "2244534180", "loc": "40.209213,28.98711" }, { "name": "DOĞAN ECZANESİ", "dist": "OSMANGAZİ", "address": "BAHAR MAH. NASİP SOK. NO:9 POSTA KODU:16240", "phone": "2242727285", "loc": "40.203136,29.066585" }, { "name": "NİLÜFER MERVE ECZANESİ", "dist": "NİLÜFER", "address": "CUMHURİYET MAH. GAZİ CAD. NO:48/A-B POSTA KODU:16140", "phone": "2244525255", "loc": "40.222018,28.972105" }, { "name": "NARMANLI ECZANESİ", "dist": "NİLÜFER", "address": "YÜZÜNCÜYIL MAH. HAKAN SEPETÇİ CAD. NO:2A/H POSTA KODU:16280", "phone": "2249093569", "loc": "40.216502,28.893327" }, { "name": "MERKEZ BURSA ECZANESİ", "dist": "OSMANGAZİ", "address": "İNTİZAM MAH. İLKBAHAR CAD. 18/A POSTA KODU:16050", "phone": "2242531319", "loc": "40.19448,29.055746" }, { "name": "BATI TRAKYA ECZANESİ", "dist": "YILDIRIM", "address": "YİĞİTLER MAH. TÜRKMENBAŞI CAD. NO:123/A2 POSTA KODU:16290", "phone": "2243420298", "loc": "40.189238,29.154597" }, { "name": "1050 KONUTLAR ECZANESİ", "dist": "OSMANGAZİ", "address": "AKPINAR MAH. HANCI CAD. NO:22/1 POSTA KODU:16160", "phone": "2242422122", "loc": "40.243798,28.972074" }, { "name": "KUZEY ECZANESİ", "dist": "YILDIRIM", "address": "MİLLET MAH. 7202 SOK. NO:4/C POSTA KODU:16260", "phone": "2242120072", "loc": "40.21423,29.095499" }, { "name": "NİLÜFER SU ECZANESİ", "dist": "NİLÜFER", "address": "ÜÇEVLER MAH. ÜLMAN SOK. NO:6/1A POSTA KODU:16270", "phone": "2244414383", "loc": "40.19765,28.948233" }, { "name": "GÜRKAN ECZANESİ", "dist": "NİLÜFER", "address": "ESENTEPE MAH. TUNA CAD. NO:96/A POSTA KODU:16130", "phone": "2242400848", "loc": "40.2243,28.983861" }, { "name": "BEYAZIT ECZANESİ", "dist": "YILDIRIM", "address": "BEYAZIT MAH. EĞİTİM CAD. KASIM ÖNADIM BULVARI NO:15 POSTA KODU:16330", "phone": "2243641015", "loc": "40.185856,29.100612" }, { "name": "YENİKALE ECZANESİ", "dist": "OSMANGAZİ", "address": "DİKKALDIRIM MAH. HAT CAD. NO:1/1-B POSTA KODU:16090", "phone": "2242364698", "loc": "40.207872,29.018024" }, { "name": "ORHANGAZİ ECZANESİ", "dist": "ORHANGAZİ", "address": "HÜRRİYET MAH. CAMİ SOK. NO:13/B POSTA KODU:16820", "phone": "2245733373", "loc": "40.483893,29.30615" }, { "name": "AKKAYNAK ECZANESİ", "dist": "OSMANGAZİ", "address": "DEMİRTAŞ BARBAROS MAH. CUMHURİYET CAD. NO:1/B POSTA KODU:16245", "phone": "2242622266", "loc": "40.271445,29.093272" }, { "name": "MELİS ECZANESİ", "dist": "GEMLİK", "address": "BALIKPAZARI MAH. YEDİEVLER SOK. NO:59/A POSTA KODU:16600", "phone": "2245135265", "loc": "40.43557899,29.15402688" }, { "name": "HAYAT ECZANESİ", "dist": "KARACABEY", "address": "SIRABADEMLER MAH. ORTAOKUL CAD. NO:76 POSTA KODU:16700", "phone": "2246600006", "loc": "40.21101801,28.36103292" }, { "name": "GİZEM NUR ECZANESİ", "dist": "OSMANGAZİ", "address": "ELMASBAHÇELER MAH. GAZLI SOK. NO:68/A POSTA KODU:16230", "phone": "2242513210", "loc": "40.192146,29.076706" }, { "name": "NARLI ECZANESİ", "dist": "OSMANGAZİ", "address": "YUNUSELİ MAH. YUNUSELİ BULVARI NO:195/B POSTA KODU:16104", "phone": "2242484898", "loc": "40.248124,29.015635" }, { "name": "YENİ ORHAN ECZANESİ", "dist": "BÜYÜKORHAN", "address": "ORHAN MAH. DR.İBRAHİM ÖKTEM CAD. NO:35 POSTA KODU:16990", "phone": "5062260344", "loc": "39.77504298,28.88199504" }, { "name": "TUBA GÜMÜŞ ECZANESİ", "dist": "İNEGÖL", "address": "BURHANİYE MAH. KEMALETTİN SAMİ PAŞA CAD. NO:30 POSTA KODU:16400", "phone": "2247156368", "loc": "40.08051396,29.50676712" }, { "name": "ZÜMRÜT ECZANESİ", "dist": "İNEGÖL", "address": "HAMİDİYE MAH. HASTANE CAD. NO:35/C POSTA KODU:16400", "phone": "5312394404", "loc": "40.10166999,29.52455688" }, { "name": "AKÇALAR ECZANESİ", "dist": "NİLÜFER", "address": "AKÇALAR MAH. KANAL(660) CAD. NO:14/B/A POSTA KODU:16225", "phone": "2244885086", "loc": "40.176073,28.744807" }, { "name": "BİLGİN ECZANESİ", "dist": "MUDANYA", "address": "ÖMERBEY MAH. DENİZ CAD. 2.BARIŞ SOK. AKARSU SİTESİ C-BLOK NO:4B POSTA KODU:16940", "phone": "2245448474", "loc": "40.369699,28.891523" }, { "name": "FLORA ECZANESİ", "dist": "NİLÜFER", "address": "23 NİSAN MAH. KÖROĞLU CAD. NO:5B/B POSTA KODU:16090", "phone": "2249090216", "loc": "40.217581,28.945144" }] };
+        //var pharmaciesData = @Html.Raw((ViewBag.PharmaciesData));
+        var pharmacyIcon = createIcon('\img.png', [32, 32], [16, 32], [0, -32]);
+        var userIcon = createIcon('https://cdn0.iconfinder.com/data/icons/user-icons-4/100/user-17-512.png', [40, 40], [16, 32], [0, -32]);
 
-        window.onload = function () {
-            filterPharmacies();
+        function CreateMap(lat, lng, zoom, maxZoom) {
+            openstreetmap = L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: maxZoom });
+            googlemap = L.tileLayer('http://www.google.cn/maps/vt?lyrs=s@189&gl=cn&x={x}&y={y}&z={z}', {
+                attribution: 'Google'
+            });
+            map = new L.Map('map', { center: new L.LatLng(lat, lng), zoom: zoom });
+            drawnItems = L.featureGroup().addTo(map);
+            openstreetmap.addTo(map);
+            createDrawnControl();
+            switchLayer();
         }
 
-        // Harita Getirme
-        var openstreetmapUrl = 'http:{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-            openstreetmap = L.tileLayer(openstreetmapUrl, { maxZoom: 18 }),
-            map = new L.Map('map', { center: new L.LatLng(40.18869647290294, 29.054207783048007), zoom: 10 }),
-            drawnItems = L.featureGroup().addTo(map);
-        openstreetmap.addTo(map);
+        function createDrawnControl() {
+            var drawControl = new L.Control.Draw({
+                draw: {
+                    polygon: true,
+                    polyline: true,
+                    rectangle: true,
+                    circle: true,
+                    marker: true
+                },
+                edit: {
+                    featureGroup: drawnItems,
+                    remove: true
+                }
+            });
+            map.addControl(drawControl);
+        }
 
-        //Harita Üzerine Çizim Yapma
-        var drawControl = new L.Control.Draw({
-            draw: {
-                polygon: true,
-                polyline: true,
-                rectangle: true,
-                circle: true,
-                marker: true
-            },
-            edit: {
-                featureGroup: drawnItems,
-                remove: true
-            }
-        });
-        map.addControl(drawControl);
+        function switchLayer() {
+            L.control.layers({
+                'OpenStreetMap': openstreetmap,
+                'Google': googlemap
+            }, {
+                'Draw Layer': drawnItems
+            }, { position: 'topleft', collapsed: false }).addTo(map);
+        }
 
         function makeDraggable(popup) {
             var pos = map.latLngToLayerPoint(popup.getLatLng());
@@ -193,140 +218,58 @@
             });
         }
 
-        // OpenStreetMap ile GoogleMaps Arasında Dinamik Geçiş Yapma
-        L.control.layers({
-            'OpenStreetMap': openstreetmap,
-            'Google': L.tileLayer('http://www.google.cn/maps/vt?lyrs=s@189&gl=cn&x={x}&y={y}&z={z}', {
-                attribution: 'Google'
-            })
-        }, { 'Draw Layer': drawnItems }, { position: 'topleft', collapsed: false }).addTo(map);
-
-        map.on('draw:created', function (e) {
-            var layer = e.layer;
-            drawnItems.addLayer(layer);
-
-            // Poligon koordinatlarını GeoJSON formatında al
-            var geoJSON = layer.toGeoJSON();
-            var shapeType = geoJSON.geometry.type;
-            var coordinates = geoJSON.geometry.coordinates;
-
-            // Poligonun alanını hesapla
-            var area = 0;
-            if (shapeType === 'Polygon' || shapeType === 'MultiPolygon') {
-                var polygon = turf.polygon(coordinates);
-                area = turf.area(polygon);
-
-                var popupContent = '<b style="color:red;">Alan Bilgisi</b><br>' + '<b>Alan:</b> ' + (area / 10000).toFixed(2) + ' m²';
+        function GetUserLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function (position) {
+                        userLatitude = position.coords.latitude;
+                        userLongitude = position.coords.longitude;
+                        userLatLng = new L.LatLng(position.coords.latitude, position.coords.longitude);
+                        addUserLocationToMap(userLatLng);
+                        document.getElementById('coordinatesInput').value = `${userLatitude},${userLongitude}`;
+                        filterPharmacies();
+                    },
+                    function (error) {
+                        switch (error.code) {
+                            case error.PERMISSION_DENIED:
+                                alert("Konum erişimi reddedildi. Lütfen tarayıcı ayarlarında konum izinlerini kontrol edin.");
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                alert("Konum bilgisi alınamadı. Lütfen internet bağlantınızı kontrol edin.");
+                                break;
+                            case error.TIMEOUT:
+                                alert("Konum alımı zaman aşımına uğradı. Lütfen tekrar deneyin.");
+                                break;
+                            default:
+                                alert("Bilinmeyen bir hata oluştu. Lütfen tekrar deneyin.");
+                                break;
+                        }
+                        console.error('Konum Alınamadı:', error.message);
+                    },
+                    {
+                        timeout: 10000, // 10 saniye
+                        enableHighAccuracy: true
+                    }
+                );
+            } else {
+                alert('Tarayıcınız Geolocation API Desteklemiyor.');
             }
-            else if (shapeType === 'Point') {
-                var center = layer.getLatLng();
-                var radius = layer.getRadius();
-
-                var point = turf.point([center.lng, center.lat]);
-                var circle = turf.circle(point, radius, { units: 'meters' });
-
-                var area = turf.area(circle);
-                var newArea = (area / 10000).toFixed(2);
-
-                var popupContent = '<b style="color:red;">Daire Bilgileri</b><br>' +
-                    '<b>Yarıçap:</b> ' + Math.round(radius) + ' m<br>' +
-                    '<b>Alan:</b> ' + newArea + ' m²';
-
-                var color;
-                if (newArea > 0 && newArea < 100) {
-                    color = 'green';
-                } else if (newArea >= 100 && newArea < 500) {
-                    color = 'yellow';
-                }
-                else if (newArea >= 500 && newArea < 1000) {
-                    color = 'blue';
-                }
-                else if (newArea > 1000) {
-                    color = 'red';
-                }
-
-                // Dairenin stilini güncelle
-                layer.setStyle({
-                    color: color,
-                    fillColor: color,
-                    fillOpacity: 0.5
-                });
-            }
-
-            // Popup formunu ve koordinatları güncelle
-            var popupForm = document.getElementById('popupForm');
-            var position = map.latLngToContainerPoint(layer.getLatLngs ? layer.getLatLngs()[0][0] : layer.getLatLng());
-
-            popupForm.style.display = 'block';
-            popupForm.style.left = position.x + 'px';
-            popupForm.style.top = position.y + 'px';
-
-            document.getElementById('saveMarker').onclick = function () {
-                var title = document.getElementById('title').value;
-                var note = document.getElementById('note').value;
-
-                // Popup içeriğini güncelle
-                popupContent += '<b style="color:red;"><br>İçerik Bilgileri</b><br>' + '<b>' + title + '</b><br>' + note;
-
-                layer.bindPopup(popupContent).openPopup();
-                makeDraggable(layer.getPopup());
-
-
-                popupForm.style.display = 'none';
-                document.getElementById('title').value = '';
-                document.getElementById('note').value = '';
-            };
-
-            document.getElementById('coordinatesInput').value = JSON.stringify(coordinates);
-            document.getElementById('typeInput').value = shapeType;
-
-        });
-
-        // Kullanıcı Konumu Alma
-        var userLatitude, userLongitude;
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                function (position) {
-                    var userLatLng = new L.LatLng(position.coords.latitude, position.coords.longitude);
-                    addUserLocationToMap(userLatLng);
-                    userLatitude = position.coords.latitude;
-                    userLongitude = position.coords.longitude;
-                    document.getElementById('coordinatesInput').value = userLatitude + ',' + userLongitude;
-                    updateRouting(userLatLng);
-                },
-                function (error) {
-                    console.error('Konum Alınamadı:', error.message);
-                }
-            );
-        } else {
-            console.error('Tarayıcınız Geolocation API Desteklemiyor.');
         }
 
-        // Kullanıcı İkonu
-        var userIcon = L.icon({
-            iconUrl: 'https://cdn0.iconfinder.com/data/icons/user-icons-4/100/user-17-512.png',
-            iconSize: [40, 40],
-            iconAnchor: [16, 32],
-            popupAnchor: [0, -32]
-        });
-
-        var userLocationMarker;
         function addUserLocationToMap(location) {
             if (userLocationMarker) {
                 userLocationMarker.remove();
             }
             userLocationMarker = L.marker(location, { icon: userIcon }).addTo(map);
 
-            var userLatitude = location.lat;
-            var userLongitude = location.lng;
+            userLatitude = location.lat;
+            userLongitude = location.lng;
             var geocodingUrl = 'https://nominatim.openstreetmap.org/reverse?format=json&lat=' + userLatitude + '&lon=' + userLongitude;
             fetch(geocodingUrl)
                 .then(response => response.json())
                 .then(data => {
                     var address = data.display_name;
-                    var streetViewUrl = 'https://maps.googleapis.com/maps/api/streetview?size=600x300&location=' + userLatitude + ',' + userLongitude;
-
-                    var popupContent = '<div style="width: 200px; font-family: Arial, sans-serif;">' +
+                    var popupUserContent = '<div style="width: 200px; font-family: Arial, sans-serif;">' +
                         '<b style="font-size: 16px; color: #333; text-align: center; display: block;">Konum Bilgileri</b>' +
                         '<div style="margin-top: 10px; color: #666;">' +
                         '<b style="color: #333">Adres:</b><br>' + address + '<br>' +
@@ -334,77 +277,61 @@
                         '</div>' +
                         '</div>';
 
-                    userLocationMarker.bindPopup(popupContent);
+                    userLocationMarker.bindPopup(popupUserContent);
 
                     userLocationMarker.on('click', function () {
                         userLocationMarker.openPopup();
                         makeDraggable(userLocationMarker.getPopup())
                     });
-                    //Harita Görüş Alanı Ayarlama
+
                     map.setView(location, 15);
                 })
                 .catch(error => console.error('Adres alınamadı:', error));
             map.setView(location, 15);
-
-            var shapeType = document.getElementById('typeInput').value;
-            var coordinates = document.getElementById('coordinatesInput').value;
         }
 
-        // Google Maps Direction API Kullanarak Yol Tarifi
-        function getDirectionGoogleMaps(userLat, userLng, pharmacyLoc) {
-            var userLocation = L.latLng(userLatitude, userLongitude);
-            var pharmacyLocation = L.latLng(
-                parseFloat(pharmacyLoc.split(',')[0]),
-                parseFloat(pharmacyLoc.split(',')[1])
-            );
+        function getDirectionGoogleMaps(pharmacyLat, pharmacyLng) {
+            pharmacyLatLng = L.latLng(pharmacyLat, pharmacyLng);
             var directionsURL = 'https://www.google.com/maps/dir/?api=1' +
-                '&origin=' + userLocation.lat + ',' + userLocation.lng +
-                '&destination=' + pharmacyLocation.lat + ',' + pharmacyLocation.lng;
+                '&origin=' + userLatLng.lat + ',' + userLatLng.lng +
+                '&destination=' + pharmacyLatLng.lat + ',' + pharmacyLatLng.lng;
             window.open(directionsURL, '_blank');
         }
 
-        var routingControl = null;
+        routingControl = null;
 
-        // Leaflet Routing Machine ile rota çizme fonksiyonu
         function getDirectionLeaflet(pharmacyLat, pharmacyLng) {
-            navigator.geolocation.getCurrentPosition(function (position) {
-                var userLatLng = L.latLng(position.coords.latitude, position.coords.longitude);
-                var pharmacyLatLng = L.latLng(pharmacyLat, pharmacyLng);
+            pharmacyLatLng = L.latLng(pharmacyLat, pharmacyLng);
 
-                if (routingControl) {
-                    map.removeControl(routingControl);
-                }
+            if (routingControl) {
+                map.removeControl(routingControl);
+            }
 
-                routingControl = L.Routing.control({
-                    waypoints: [
-                        userLatLng,
-                        pharmacyLatLng
-                    ],
-                    routeWhileDragging: true,
-                    createMarker: function () {
-                        return null;
-                    },
-                    router: L.Routing.osrmv1({
-                        language: 'tr',
-                        profile: 'driving',
-                        units: 'metric'
-                    })
-                }).addTo(map);
-            });
+            routingControl = L.Routing.control({
+                waypoints: [
+                    userLatLng,
+                    pharmacyLatLng
+                ],
+                routeWhileDragging: true,
+                createMarker: function () {
+                    return null;
+                },
+                router: L.Routing.osrmv1({
+                    language: 'tr',
+                    profile: 'driving',
+                    units: 'metric'
+                })
+            }).addTo(map);
         }
 
-        // Eczane İkonu
-        var pharmacyIcon = L.icon({
-            iconUrl: '\img.png',
-            iconSize: [32, 32],
-            iconAnchor: [16, 32],
-            popupAnchor: [0, -32]
-        });
-
-        // Eczaneleri Harita Üzerinde Gösterme
-        var pharmaciesData = { "success": true, "result": [{ "name": "ELİF ECZANESİ", "dist": "İNEGÖL", "address": "HAMİDİYE MAH. KASIM EFENDİ CAD. NO:102-1/A POSTA KODU:16400", "phone": "2247112417", "loc": "40.07335797,29.51393004" }, { "name": "ÇELEBİ ECZANESİ", "dist": "YILDIRIM", "address": "ERTUĞRULGAZİ MAH. OKUL SOK. NO:11/A POSTA KODU:16320", "phone": "2243690740", "loc": "40.177576,29.114966" }, { "name": "GÜLŞAH ECZANESİ", "dist": "GÜRSU", "address": "KURTULUŞ MAH. ATATÜRK CAD. NO:130/A POSTA KODU:16580", "phone": "2243719020", "loc": "40.211794,29.191923" }, { "name": "AYLA ECZANESİ", "dist": "KESTEL", "address": "VANİ MEHMET MAH. HAKİM AYTEKİN BAYSAL SOK. NO:7/A 16450", "phone": "2243722733", "loc": "40.19941,29.213327" }, { "name": "SEDA ECZANESİ", "dist": "GEMLİK", "address": "EŞREF DİNÇER MAH. KESTANE SOK. NO:20 POSTA KODU:16600", "phone": "2245137068", "loc": "40.43292498,29.16151992" }, { "name": "UYSAL ECZANESİ", "dist": "İZNİK", "address": "MAHMUT ÇELEBİ MAH. KILIÇASLAN CAD. NO:2/6-A POSTA KODU:16860", "phone": "2247571291", "loc": "40.42868796,29.71984392" }, { "name": "ÇINAR ECZANESİ", "dist": "KELES", "address": "CUMA MAH. TAHİR HOCA CAD. NO:1 POSTA KODU:16740", "phone": "2248613072", "loc": "39.913164,29.23273008" }, { "name": "GÜLSER ECZANESİ", "dist": "MUSTAFAKEMALPAŞA", "address": "HAMZABEY MAH. HÜSEYİN ÖZLÜ SOK. NO:16/A POSTA KODU:16500", "phone": "2246134210", "loc": "40.038822,28.40776308" }, { "name": "YALÇIN ECZANESİ", "dist": "ORHANELİ", "address": "İSMETPAŞA MAH. CAMİ KARŞISI SOK. NO:3 POSTA KODU:16980", "phone": "2248171286", "loc": "39.90240297,28.98882612" }, { "name": "KUTLUAY ECZANESİ", "dist": "MUDANYA", "address": "EĞİTİM MAH. LİSE CAD. BAYSAN APT. NO:25/A GÜZELYALI POSTA KODU:16140", "phone": "2244531223", "loc": "40.35121398,28.92850416" }, { "name": "YASEMİN ECZANESİ", "dist": "YENİŞEHİR", "address": "YENİGÜN MAH. GÜL SOK. NO:1 POSTA KODU:16900", "phone": "2247722606", "loc": "40.26824802,29.65202388" }, { "name": "ULAŞ ECZANESİ", "dist": "HARMANCIK", "address": "MERKEZ MAH. FEVZİ PAŞA CAD. NO:9/A POSTA KODU:16770", "phone": "2248812272", "loc": "39.67902702,29.15490204" }, { "name": "KONAK SEVİL ECZANESİ", "dist": "NİLÜFER", "address": "KONAK MAH. BURAK SOK. NO:21/B POSTA KODU:16110", "phone": "2244534180", "loc": "40.209213,28.98711" }, { "name": "DOĞAN ECZANESİ", "dist": "OSMANGAZİ", "address": "BAHAR MAH. NASİP SOK. NO:9 POSTA KODU:16240", "phone": "2242727285", "loc": "40.203136,29.066585" }, { "name": "NİLÜFER MERVE ECZANESİ", "dist": "NİLÜFER", "address": "CUMHURİYET MAH. GAZİ CAD. NO:48/A-B POSTA KODU:16140", "phone": "2244525255", "loc": "40.222018,28.972105" }, { "name": "NARMANLI ECZANESİ", "dist": "NİLÜFER", "address": "YÜZÜNCÜYIL MAH. HAKAN SEPETÇİ CAD. NO:2A/H POSTA KODU:16280", "phone": "2249093569", "loc": "40.216502,28.893327" }, { "name": "MERKEZ BURSA ECZANESİ", "dist": "OSMANGAZİ", "address": "İNTİZAM MAH. İLKBAHAR CAD. 18/A POSTA KODU:16050", "phone": "2242531319", "loc": "40.19448,29.055746" }, { "name": "BATI TRAKYA ECZANESİ", "dist": "YILDIRIM", "address": "YİĞİTLER MAH. TÜRKMENBAŞI CAD. NO:123/A2 POSTA KODU:16290", "phone": "2243420298", "loc": "40.189238,29.154597" }, { "name": "1050 KONUTLAR ECZANESİ", "dist": "OSMANGAZİ", "address": "AKPINAR MAH. HANCI CAD. NO:22/1 POSTA KODU:16160", "phone": "2242422122", "loc": "40.243798,28.972074" }, { "name": "KUZEY ECZANESİ", "dist": "YILDIRIM", "address": "MİLLET MAH. 7202 SOK. NO:4/C POSTA KODU:16260", "phone": "2242120072", "loc": "40.21423,29.095499" }, { "name": "NİLÜFER SU ECZANESİ", "dist": "NİLÜFER", "address": "ÜÇEVLER MAH. ÜLMAN SOK. NO:6/1A POSTA KODU:16270", "phone": "2244414383", "loc": "40.19765,28.948233" }, { "name": "GÜRKAN ECZANESİ", "dist": "NİLÜFER", "address": "ESENTEPE MAH. TUNA CAD. NO:96/A POSTA KODU:16130", "phone": "2242400848", "loc": "40.2243,28.983861" }, { "name": "BEYAZIT ECZANESİ", "dist": "YILDIRIM", "address": "BEYAZIT MAH. EĞİTİM CAD. KASIM ÖNADIM BULVARI NO:15 POSTA KODU:16330", "phone": "2243641015", "loc": "40.185856,29.100612" }, { "name": "YENİKALE ECZANESİ", "dist": "OSMANGAZİ", "address": "DİKKALDIRIM MAH. HAT CAD. NO:1/1-B POSTA KODU:16090", "phone": "2242364698", "loc": "40.207872,29.018024" }, { "name": "ORHANGAZİ ECZANESİ", "dist": "ORHANGAZİ", "address": "HÜRRİYET MAH. CAMİ SOK. NO:13/B POSTA KODU:16820", "phone": "2245733373", "loc": "40.483893,29.30615" }, { "name": "AKKAYNAK ECZANESİ", "dist": "OSMANGAZİ", "address": "DEMİRTAŞ BARBAROS MAH. CUMHURİYET CAD. NO:1/B POSTA KODU:16245", "phone": "2242622266", "loc": "40.271445,29.093272" }, { "name": "MELİS ECZANESİ", "dist": "GEMLİK", "address": "BALIKPAZARI MAH. YEDİEVLER SOK. NO:59/A POSTA KODU:16600", "phone": "2245135265", "loc": "40.43557899,29.15402688" }, { "name": "HAYAT ECZANESİ", "dist": "KARACABEY", "address": "SIRABADEMLER MAH. ORTAOKUL CAD. NO:76 POSTA KODU:16700", "phone": "2246600006", "loc": "40.21101801,28.36103292" }, { "name": "GİZEM NUR ECZANESİ", "dist": "OSMANGAZİ", "address": "ELMASBAHÇELER MAH. GAZLI SOK. NO:68/A POSTA KODU:16230", "phone": "2242513210", "loc": "40.192146,29.076706" }, { "name": "NARLI ECZANESİ", "dist": "OSMANGAZİ", "address": "YUNUSELİ MAH. YUNUSELİ BULVARI NO:195/B POSTA KODU:16104", "phone": "2242484898", "loc": "40.248124,29.015635" }, { "name": "YENİ ORHAN ECZANESİ", "dist": "BÜYÜKORHAN", "address": "ORHAN MAH. DR.İBRAHİM ÖKTEM CAD. NO:35 POSTA KODU:16990", "phone": "5062260344", "loc": "39.77504298,28.88199504" }, { "name": "TUBA GÜMÜŞ ECZANESİ", "dist": "İNEGÖL", "address": "BURHANİYE MAH. KEMALETTİN SAMİ PAŞA CAD. NO:30 POSTA KODU:16400", "phone": "2247156368", "loc": "40.08051396,29.50676712" }, { "name": "ZÜMRÜT ECZANESİ", "dist": "İNEGÖL", "address": "HAMİDİYE MAH. HASTANE CAD. NO:35/C POSTA KODU:16400", "phone": "5312394404", "loc": "40.10166999,29.52455688" }, { "name": "AKÇALAR ECZANESİ", "dist": "NİLÜFER", "address": "AKÇALAR MAH. KANAL(660) CAD. NO:14/B/A POSTA KODU:16225", "phone": "2244885086", "loc": "40.176073,28.744807" }, { "name": "BİLGİN ECZANESİ", "dist": "MUDANYA", "address": "ÖMERBEY MAH. DENİZ CAD. 2.BARIŞ SOK. AKARSU SİTESİ C-BLOK NO:4B POSTA KODU:16940", "phone": "2245448474", "loc": "40.369699,28.891523" }, { "name": "FLORA ECZANESİ", "dist": "NİLÜFER", "address": "23 NİSAN MAH. KÖROĞLU CAD. NO:5B/B POSTA KODU:16090", "phone": "2249090216", "loc": "40.217581,28.945144" }] };
-        //var pharmaciesData = @Html.Raw((ViewBag.PharmaciesData));
-        var pharmacyMarkers = [];
+        function createIcon(iconUrl, size, anchor, popupAnchor) {
+            return L.icon({
+                iconUrl: iconUrl,
+                iconSize: size,
+                iconAnchor: anchor,
+                popupAnchor: popupAnchor
+            });
+        }
 
         function removeAllMarkers() {
             pharmacyMarkers.forEach(marker => {
@@ -413,129 +340,74 @@
             pharmacyMarkers = [];
         }
 
-        function GrowMarker(marker) {
-            var growIcon = L.icon({
-                iconUrl: '\img.png',
-                iconSize: [48, 48],
-                iconAnchor: [24, 48],
-                popupAnchor: [0, -48]
-            });
+        function growMarker(marker) {
+            var growIcon = createIcon('\img.png', [48, 48], [24, 48], [0, -48]);
             marker.setIcon(growIcon);
         }
 
         function resetMarkerSize(marker) {
-            var originalIcon = L.icon({
-                iconUrl: '\img.png',
-                iconSize: [32, 32],
-                iconAnchor: [16, 32],
-                popupAnchor: [0, -32]
-            });
+            var originalIcon = createIcon('\img.png', [32, 32], [16, 32], [0, -32]);
             marker.setIcon(originalIcon);
         }
 
-        // Eczaneleri Filtreleme
         function filterPharmacies() {
             const distance = parseFloat(document.getElementById('distance').value) || 0;
             const isDistanceEmptyOrZero = distance === '' || parseFloat(distance) === 0;
-            const tableBody = document.getElementById('onDutyTable').getElementsByTagName('tbody')[0];
+            tableBody = document.getElementById('onDutyTable').getElementsByTagName('tbody')[0];
             tableBody.innerHTML = '';
 
             removeAllMarkers();
 
+            pharmaciesTestData.result.forEach(function (pharmacy) {
 
-            navigator.geolocation.getCurrentPosition(function (position) {
-                const userLatLng = L.latLng(position.coords.latitude, position.coords.longitude);
+                const loc = pharmacy.loc.split(',').map(coord => coord.trim());
+                const lat = parseFloat(loc[0]);
+                const lng = parseFloat(loc[1]);
+                pharmacyLatLng = L.latLng(lat, lng);
 
-                pharmaciesData.result.forEach(function (pharmacy) {
-                    const loc = pharmacy.loc.split(',').map(coord => coord.trim());
-                    const lat = parseFloat(loc[0]);
-                    const lng = parseFloat(loc[1]);
-                    const pharmacyLatLng = L.latLng(lat, lng);
+                const distanceToPharmacy = userLatLng.distanceTo(pharmacyLatLng) / 1000;
 
-                    const distanceToPharmacy = userLatLng.distanceTo(pharmacyLatLng) / 1000;
+                if (isDistanceEmptyOrZero || distanceToPharmacy <= parseFloat(distance)) {
+                    const marker = createPharmacyMarker(pharmacy, lat, lng);
+                    pharmacyMarkers.push(marker);
 
-                    if (isDistanceEmptyOrZero || distanceToPharmacy <= parseFloat(distance)) {
-                        var marker = L.marker(pharmacyLatLng, { icon: pharmacyIcon }).addTo(map);
-                        pharmacyMarkers.push(marker);
+                    var formattedPhone = formatPhoneNumber(pharmacy.phone);
+                    const row = tableBody.insertRow();
+                    row.innerHTML =
+                        `
+                                             <td>${pharmacy.name}</td>
+                                             <td>${pharmacy.address}</td>
+                                             <td>${formattedPhone}</td>
+                                             <td>${distanceToPharmacy.toFixed(2)} km</td>
+                                             <td>
+                                                <button class="btn btn-success" onclick="getDirectionLeaflet(${lat}, ${lng})">Yol Tarifi (Leaflet)</button>
+                                                <button class="btn btn-primary" onclick="getDirectionGoogleMaps(${lat}, ${lng})">Yol Tarifi (Google Maps)</button>
+                                             </td>
+                                             `;
 
-                        // Aynı anda birden fazla popup açabilme özelliği
-                        var popupContent =
-                            '<div style="width: 200px; font-family: Arial, sans-serif;">' +
-                            '<div style="padding: 10px; box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1); border-radius: 5px;">' +
-                            '<b style="font-size: 16px; color: #333; text-align: center; display: block;">' + pharmacy.name + '</b>' +
-                            '<div style="margin-top: 10px; color: #666;">' +
-                            '<b style="color: #333;">Adres:</b><br> ' + pharmacy.address + '<br>' +
-                            '<b style="color: #333;">Telefon:</b><br> ' + pharmacy.phone +
-                            '</div>' +
-                            '<center>' +
-                            '<button style="padding: 5px 10px; background-color: green; border: none; color: white; border-radius: 5px; cursor: pointer; margin: 2px;" ' +
-                            'onclick="getDirectionLeaflet(' + lat + ',' + lng + ')">Yol Tarifi (Leaflet)</button>' +
-                            '<button style="padding: 5px 10px; background-color: #007BFF; border: none; color: white; border-radius: 5px; cursor: pointer; margin: 2px;" ' +
-                            'onclick="getDirectionGoogleMaps(' + lat + ',' + lng + ',\'' + pharmacy.loc + '\')">Yol Tarifi (Google Maps)</button>' +
-                            '</center>' +
-                            '</div>' +
-                            '</div>';
-
-                        var popup = L.popup({
-                            closeOnClick: false,
-                            autoClose: false
-                        }).setContent(popupContent);
-
-                        marker.on('click', function () {
-                            if (!marker.isPopupOpen()) {
-                                marker.bindPopup(popup).openPopup();
-                                GrowMarker(marker);
-                                makeDraggable(marker.getPopup());
-                            } else {
-                                marker.closePopup();
-                                resetMarkerSize(marker);
-                            }
+                    row.addEventListener('click', function () {
+                        //map.setView(pharmacyLatLng, 15);
+                        map.flyTo(marker.getLatLng(), 15, {
+                            animate: true,
+                            duration: 1
                         });
+                        marker.openPopup();
 
-                        marker.on('popupclose', function () {
-                            marker.unbindPopup();
-                            resetMarkerSize(marker);
-                        });
+                        const mapElement = document.getElementById('map');
 
-                        var formattedPhone = formatPhoneNumber(pharmacy.phone);
-                        const row = tableBody.insertRow();
-                        row.innerHTML =
-                            `
-                                 <td>${pharmacy.name}</td>
-                                 <td>${pharmacy.address}</td>
-                                 <td>${formattedPhone}</td>
-                                 <td>${distanceToPharmacy.toFixed(2)} km</td>
-                                 <td><button class="btn btn-success" onclick="getDirectionLeaflet(${lat}, ${lng})">Yol Tarifi (Leaflet)</button>
-                                     <button class="btn btn-primary" onclick="getDirectionGoogleMaps(${lat}, ${lng}, '${pharmacy.loc}')">Yol Tarifi (Google Maps)</button></td>
-                                 `;
-
-                        row.addEventListener('click', function () {
-                            // Düz Geçiş
-                            //map.setView(pharmacyLatLng, 15);
-                            // Animasyonlu Geçiş
-                            map.flyTo(pharmacyLatLng, 15, {
-                                animate: true,
-                                duration: 1
+                        if (mapElement) {
+                            const rect = mapElement.getBoundingClientRect();
+                            const scrollPosition = rect.top + window.pageYOffset;
+                            window.scrollTo({
+                                top: scrollPosition - 20,
+                                behavior: 'smooth'
                             });
-                            marker.openPopup();
-
-                            const mapElement = document.getElementById('map');
-
-                            if (mapElement) {
-                                const rect = mapElement.getBoundingClientRect();
-                                const scrollPosition = rect.top + window.pageYOffset;
-                                window.scrollTo({
-                                    top: scrollPosition - 20,
-                                    behavior: 'smooth'
-                                });
-                            }
-                        });
-                    }
-                });
+                        }
+                    });
+                }
             });
         }
 
-        // Telefon Numarası Özel Format
         function formatPhoneNumber(phoneNumber) {
             const cleaned = ('' + phoneNumber).replace(/\D/g, '');
             const match = cleaned.match(/^(\d{3})(\d{3})(\d{2})(\d{2})$/);
@@ -548,10 +420,9 @@
         let sortOrder = 'asc';
         let lastSortedColumn = null;
 
-        // Tabloyu sıralama fonksiyonları
         function sortTable(criteria, thElement) {
-            const tableBody = document.getElementById('onDutyTable').getElementsByTagName('tbody')[0];
-            const rows = Array.from(tableBody.rows);
+            tableBody = document.getElementById('onDutyTable').getElementsByTagName('tbody')[0];
+            rows = Array.from(tableBody.rows);
 
             let columnIndex;
             switch (criteria) {
@@ -605,7 +476,7 @@
 
             lastSortedColumn = thElement;
         }
-        // Türkçe karakterleri doğru şekilde küçültme
+
         function turkishToLower(str) {
             const turkishChars = ['ç', 'ı', 'i', 'ğ', 'ö', 'ş', 'ü', 'Ç', 'İ', 'Ğ', 'Ö', 'Ş', 'Ü'];
             const asciiChars = ['c', 'i', 'i', 'g', 'o', 's', 'u', 'C', 'I', 'G', 'O', 'S', 'U'];
@@ -617,13 +488,57 @@
             return result.toLowerCase();
         }
 
-        // Eczane Arama Fonksiyonu
+        function createPharmacyMarker(pharmacy, lat, lng) {
+            pharmacyLatLng = L.latLng(lat, lng);
+            const marker = L.marker(pharmacyLatLng, { icon: pharmacyIcon }).addTo(map);
+
+            const popupContent =
+                `<div style="width: 200px; font-family: Arial, sans-serif;">
+                                    <div style="padding: 10px; box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1); border-radius: 5px;">
+                                        <b style="font-size: 16px; color: #333; text-align: center; display: block;">${pharmacy.name}</b>
+                                        <div style="margin-top: 10px; color: #666;">
+                                            <b style="color: #333;">Adres:</b><br> ${pharmacy.address}<br>
+                                            <b style="color: #333;">Telefon:</b><br> ${pharmacy.phone}
+                                        </div>
+                                        <center>
+                                            <button style="padding: 5px 10px; background-color: green; border: none; color: white; border-radius: 5px; cursor: pointer; margin: 2px;"
+                                                    onclick="getDirectionLeaflet(${lat}, ${lng})">Yol Tarifi (Leaflet)</button>
+                                            <button style="padding: 5px 10px; background-color: #007BFF; border: none; color: white; border-radius: 5px; cursor: pointer; margin: 2px;"
+                                                    onclick="getDirectionGoogleMaps(${lat}, ${lng})">Yol Tarifi (Google Maps)</button>
+                                        </center>
+                                    </div>
+                                </div>`;
+
+            const popup = L.popup({
+                closeOnClick: false,
+                autoClose: false
+            }).setContent(popupContent);
+
+            marker.on('click', function () {
+                if (!marker.isPopupOpen()) {
+                    marker.bindPopup(popup).openPopup();
+                    growMarker(marker);
+                    makeDraggable(marker.getPopup());
+                } else {
+                    marker.closePopup();
+                    resetMarkerSize(marker);
+                }
+            });
+
+            marker.on('popupclose', function () {
+                marker.unbindPopup();
+                resetMarkerSize(marker);
+            });
+
+            return marker;
+        }
+
         function searchTable() {
 
-            const input = document.getElementById('searchInput');
-            const filter = turkishToLower(input.value);
-            const tableBody = document.getElementById('onDutyTable').getElementsByTagName('tbody')[0];
-            const rows = Array.from(tableBody.rows);
+            searchinput = document.getElementById('searchInput');
+            const filter = turkishToLower(searchinput.value);
+            tableBody = document.getElementById('onDutyTable').getElementsByTagName('tbody')[0];
+            rows = Array.from(tableBody.rows);
 
             removeAllMarkers();
 
@@ -636,61 +551,21 @@
                     if (name.includes(filter) || address.includes(filter)) {
                         row.style.display = '';
 
-                        const pharmaciesFound = pharmaciesData.result.filter(p => {
+                        const pharmaciesFound = pharmaciesTestData.result.filter(p => {
                             return turkishToLower(p.name).includes(name) || turkishToLower(p.address).includes(address);
                         });
 
                         pharmaciesFound.forEach(pharmacy => {
-                            console.log('Bulunan Eczane:', pharmacy);
                             const loc = pharmacy.loc.split(',').map(coord => coord.trim());
                             const lat = parseFloat(loc[0]);
                             const lng = parseFloat(loc[1]);
 
-                            const pharmacyLatLng = L.latLng(lat, lng);
-                            const marker = L.marker(pharmacyLatLng, { icon: pharmacyIcon }).addTo(map);
-
+                            pharmacyLatLng = L.latLng(lat, lng);
+                            const marker = createPharmacyMarker(pharmacy, lat, lng);
                             pharmacyMarkers.push(marker);
 
-                            var popupContent =
-                                '<div style="width: 200px; font-family: Arial, sans-serif;">' +
-                                '<div style="padding: 10px; box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1); border-radius: 5px;">' +
-                                '<b style="font-size: 16px; color: #333; text-align: center; display: block;">' + pharmacy.name + '</b>' +
-                                '<div style="margin-top: 10px; color: #666;">' +
-                                '<b style="color: #333;">Adres:</b><br> ' + pharmacy.address + '<br>' +
-                                '<b style="color: #333;">Telefon:</b><br> ' + pharmacy.phone +
-                                '</div>' +
-                                '<center>' +
-                                '<button style="padding: 5px 10px; background-color: green; border: none; color: white; border-radius: 5px; cursor: pointer; margin: 2px;" ' +
-                                'onclick="getDirectionLeaflet(' + lat + ',' + lng + ')">Yol Tarifi (Leaflet)</button>' +
-                                '<button style="padding: 5px 10px; background-color: #007BFF; border: none; color: white; border-radius: 5px; cursor: pointer; margin: 2px;" ' +
-                                'onclick="getDirectionGoogleMaps(' + lat + ',' + lng + ',\'' + pharmacy.loc + '\')">Yol Tarifi (Google Maps)</button>' +
-                                '</center>' +
-                                '</div>' +
-                                '</div>';
-
-                            var popup = L.popup({
-                                closeOnClick: false,
-                                autoClose: false
-                            }).setContent(popupContent);
-
-                            marker.on('click', function () {
-                                if (!marker.isPopupOpen()) {
-                                    marker.bindPopup(popup).openPopup();
-                                    GrowMarker(marker);
-                                    makeDraggable(marker.getPopup());
-                                } else {
-                                    marker.closePopup();
-                                    resetMarkerSize(marker);
-                                }
-                            });
-
-                            marker.on('popupclose', function () {
-                                marker.unbindPopup();
-                                resetMarkerSize(marker);
-                            });
-
                             row.addEventListener('click', function () {
-                                map.flyTo(pharmacyLatLng, 15, {
+                                map.flyTo(marker.getLatLng(), 15, {
                                     animate: true,
                                     duration: 1
                                 });
@@ -716,5 +591,115 @@
                 }
             });
         }
+
+        function calculateArea(shapeType, coordinates, layer) {
+            var area = 0;
+
+            if (shapeType === 'Polygon' || shapeType === 'MultiPolygon') {
+                var polygon = turf.polygon(coordinates);
+                area = turf.area(polygon);
+            }
+            else if (shapeType === 'Point') {
+                var center = layer.getLatLng();
+                var radius = layer.getRadius();
+                var point = turf.point([center.lng, center.lat]);
+                var circle = turf.circle(point, radius, { units: 'meters' });
+                area = turf.area(circle);
+            }
+
+            return area;
+        }
+
+        function createShapePopupContent(shapeType, area, layer) {
+            var popupContent = '';
+            var newArea = (area / 10000).toFixed(2);
+
+            if (shapeType === 'Polygon' || shapeType === 'MultiPolygon') {
+                popupContent = '<b style="color:red;">Alan Bilgisi</b><br>' +
+                    '<b>Alan:</b> ' + newArea + ' m²';
+            }
+            else if (shapeType === 'Point') {
+                var radius = layer.getRadius();
+                popupContent = '<b style="color:red;">Daire Bilgileri</b><br>' +
+                    '<b>Yarıçap:</b> ' + Math.round(radius) + ' m<br>' +
+                    '<b>Alan:</b> ' + newArea + ' m²';
+
+                var color = getColorBasedOnArea(newArea);
+                layer.setStyle({
+                    color: color,
+                    fillColor: color,
+                    fillOpacity: 0.5
+                });
+            }
+
+            return popupContent;
+        }
+
+        function getColorBasedOnArea(area) {
+            var color;
+            if (area > 0 && area < 100) {
+                color = 'green';
+            } else if (area >= 100 && area < 500) {
+                color = 'yellow';
+            } else if (area >= 500 && area < 1000) {
+                color = 'blue';
+            } else if (area > 1000) {
+                color = 'red';
+            }
+            return color;
+        }
+
+        function updatePopupForm(layer) {
+            var popupForm = document.getElementById('popupForm');
+            var position = map.latLngToContainerPoint(layer.getLatLngs ? layer.getLatLngs()[0][0] : layer.getLatLng());
+
+            popupForm.style.display = 'block';
+            popupForm.style.left = position.x + 'px';
+            popupForm.style.top = position.y + 'px';
+        }
+
+        function savePopupData(layer, popupContent) {
+            var title = document.getElementById('title').value;
+            var note = document.getElementById('note').value;
+
+            popupContent += '<b style="color:red;"><br>İçerik Bilgileri</b><br>' +
+                '<b>' + title + '</b><br>' + note;
+
+            layer.bindPopup(popupContent).openPopup();
+            makeDraggable(layer.getPopup());
+
+            document.getElementById('popupForm').style.display = 'none';
+            document.getElementById('title').value = '';
+            document.getElementById('note').value = '';
+        }
+
+        CreateMap(40.18869647290294, 29.054207783048007, 10, 18);
+
+        window.onload = function () {
+            GetUserLocation();
+
+            map.on('draw:created', function (e) {
+                var layer = e.layer;
+                drawnItems.addLayer(layer);
+
+                var geoJSON = layer.toGeoJSON();
+                var shapeType = geoJSON.geometry.type;
+                var coordinates = geoJSON.geometry.coordinates;
+
+                var area = calculateArea(shapeType, coordinates, layer);
+                ı
+                var popupShapeContent = createShapePopupContent(shapeType, area, layer);
+
+                updatePopupForm(layer);
+
+                document.getElementById('saveMarker').onclick = function () {
+                    savePopupData(layer, popupShapeContent);
+                };
+
+                document.getElementById('coordinatesInput').value = JSON.stringify(coordinates);
+                document.getElementById('typeInput').value = shapeType;
+            });
+        };
+
     </script>
 </body>
