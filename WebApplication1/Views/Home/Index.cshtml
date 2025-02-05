@@ -6,6 +6,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
 <link rel="stylesheet" href="/css/SearchBar.css" />
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-draw/dist/leaflet.draw.js"></script>
@@ -75,40 +76,128 @@
             -webkit-overflow-scrolling: touch;
         }
 
-        #onDutyTable tbody tr {
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-
-            #onDutyTable tbody tr:nth-child(odd):hover {
-                background-color: silver;
-                color: #ffffff;
-            }
-
-            #onDutyTable tbody tr:nth-child(even):hover {
-                background-color: #444444;
-                color: #ffffff;
-            }
-
-        th.sortable {
-            cursor: pointer;
-        }
-
-        .sort-indicator {
-            margin-left: 5px;
-        }
-
         #searchContainer {
-            text-align: center;
-            padding: 15px;
+            padding-top: 10px;
         }
 
         #searchInput {
-            padding: 5px;
-            width: 80%;
-            max-width: 400px;
+            padding: 8px;
+            width: 100%;
             border: 1px solid #ccc;
             border-radius: 5px;
+            font-size: 14px;
+        }
+
+        #rowsPerPage {
+            padding: 8px;
+            width: 100px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+            margin-right: 20px;
+            margin-left: 10px;
+            display: inline-block;
+        }
+
+        #searchText {
+            font-size: 14px;
+            margin-left: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+
+            #searchText span {
+                color: darkorange;
+                font-weight: bold;
+            }
+
+        #onDutyTable {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+            #onDutyTable th, #onDutyTable td {
+                padding: 12px;
+                text-align: center;
+            }
+
+                #onDutyTable th.sortable {
+                    cursor: pointer;
+                    position: relative;
+                }
+
+            #onDutyTable tbody tr {
+                cursor: pointer;
+                transition: background-color 0.3s ease;
+            }
+
+                #onDutyTable tbody tr:nth-child(odd):hover {
+                    background-color: #f1f1f1;
+                    color: #333;
+                }
+
+                #onDutyTable tbody tr:nth-child(even):hover {
+                    background-color: #ddd;
+                    color: #333;
+                }
+
+        .pagination-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 20px;
+            gap: 10px;
+        }
+
+        .pagination-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+        }
+
+            .pagination-button:hover {
+                background-color: #0056b3;
+            }
+
+        .pagination-numbers button {
+            background-color: #f1f1f1;
+            color: #333;
+            border: 1px solid #ccc;
+            padding: 8px 15px;
+            font-size: 16px;
+            border-radius: 5px;
+            margin: 0 5px;
+            cursor: pointer;
+        }
+
+            .pagination-numbers button.active {
+                background-color: #f39c12;
+                color: white;
+            }
+
+            .pagination-numbers button:hover {
+                background-color: #ddd;
+            }
+
+        .pagination-container button[disabled] {
+            background-color: #ddd;
+            cursor: not-allowed;
+        }
+
+        #searchContainer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
         }
     </style>
 </head>
@@ -116,9 +205,14 @@
     <div id="map"></div>
 
     <div id="searchContainer" class="bg-light">
-        <input type="text" id="searchInput" placeholder="Eczane Adını veya Adresini Yazınız." onkeyup="searchTable()">
+        <select id="rowsPerPage" onchange="onRowsPerPageChange()">
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+        </select>
+        <input type="text" id="searchInput" placeholder="Eczane Adını veya Adresini Yazınız." onkeyup="filterPharmacies()">
     </div>
-
     <div id="pharmacyTable">
         <table id="onDutyTable" class="table table-bordered table-striped">
             <thead>
@@ -134,6 +228,22 @@
                 <!-- Nöbetçi eczaneler buraya eklenecek -->
             </tbody>
         </table>
+        <div class="text-center" id="searchText"><span id="totalPharmaciesCount"></span> adet nöbetçi eczane gösterilmektedir.</div>
+        <div class="pagination-container">
+            <button id="first" class="pagination-button">
+                <i class="fa fa-fast-backward"></i>
+            </button>
+            <button id="prevPage" class="pagination-button">
+                <i class="fa fa-backward"></i>
+            </button>
+            <div id="pageNumbers" class="pagination-numbers"></div>
+            <button id="nextPage" class="pagination-button">
+                <i class="fa fa-forward"></i>
+            </button>
+            <button id="last" class="pagination-button">
+                <i class="fa fa-fast-forward"></i>
+            </button>
+        </div>
     </div>
 
     <form method="post" action="/Home/SaveDrawing">
@@ -161,12 +271,19 @@
     </div>
 
     <script>
-        var map, drawnItems, openstreetmap, googlemap, userLatitude, userLongitude, userLatLng, userLocationMarker, pharmacyLatLng, routingControl, tableBody, searchinput, rows, popupPharmacyContent;
+        var map, drawnItems, openstreetmap, googlemap, userLatitude, userLongitude, userLatLng, userLocationMarker, pharmacyLatLng, routingControl, tableBody , rows, popupPharmacyContent, lastSortedColumn;
         var pharmacyMarkers = [];
         var pharmaciesTestData = { "success": true, "result": [{ "name": "ELİF ECZANESİ", "dist": "İNEGÖL", "address": "HAMİDİYE MAH. KASIM EFENDİ CAD. NO:102-1/A POSTA KODU:16400", "phone": "2247112417", "loc": "40.07335797,29.51393004" }, { "name": "ÇELEBİ ECZANESİ", "dist": "YILDIRIM", "address": "ERTUĞRULGAZİ MAH. OKUL SOK. NO:11/A POSTA KODU:16320", "phone": "2243690740", "loc": "40.177576,29.114966" }, { "name": "GÜLŞAH ECZANESİ", "dist": "GÜRSU", "address": "KURTULUŞ MAH. ATATÜRK CAD. NO:130/A POSTA KODU:16580", "phone": "2243719020", "loc": "40.211794,29.191923" }, { "name": "AYLA ECZANESİ", "dist": "KESTEL", "address": "VANİ MEHMET MAH. HAKİM AYTEKİN BAYSAL SOK. NO:7/A 16450", "phone": "2243722733", "loc": "40.19941,29.213327" }, { "name": "SEDA ECZANESİ", "dist": "GEMLİK", "address": "EŞREF DİNÇER MAH. KESTANE SOK. NO:20 POSTA KODU:16600", "phone": "2245137068", "loc": "40.43292498,29.16151992" }, { "name": "UYSAL ECZANESİ", "dist": "İZNİK", "address": "MAHMUT ÇELEBİ MAH. KILIÇASLAN CAD. NO:2/6-A POSTA KODU:16860", "phone": "2247571291", "loc": "40.42868796,29.71984392" }, { "name": "ÇINAR ECZANESİ", "dist": "KELES", "address": "CUMA MAH. TAHİR HOCA CAD. NO:1 POSTA KODU:16740", "phone": "2248613072", "loc": "39.913164,29.23273008" }, { "name": "GÜLSER ECZANESİ", "dist": "MUSTAFAKEMALPAŞA", "address": "HAMZABEY MAH. HÜSEYİN ÖZLÜ SOK. NO:16/A POSTA KODU:16500", "phone": "2246134210", "loc": "40.038822,28.40776308" }, { "name": "YALÇIN ECZANESİ", "dist": "ORHANELİ", "address": "İSMETPAŞA MAH. CAMİ KARŞISI SOK. NO:3 POSTA KODU:16980", "phone": "2248171286", "loc": "39.90240297,28.98882612" }, { "name": "KUTLUAY ECZANESİ", "dist": "MUDANYA", "address": "EĞİTİM MAH. LİSE CAD. BAYSAN APT. NO:25/A GÜZELYALI POSTA KODU:16140", "phone": "2244531223", "loc": "40.35121398,28.92850416" }, { "name": "YASEMİN ECZANESİ", "dist": "YENİŞEHİR", "address": "YENİGÜN MAH. GÜL SOK. NO:1 POSTA KODU:16900", "phone": "2247722606", "loc": "40.26824802,29.65202388" }, { "name": "ULAŞ ECZANESİ", "dist": "HARMANCIK", "address": "MERKEZ MAH. FEVZİ PAŞA CAD. NO:9/A POSTA KODU:16770", "phone": "2248812272", "loc": "39.67902702,29.15490204" }, { "name": "KONAK SEVİL ECZANESİ", "dist": "NİLÜFER", "address": "KONAK MAH. BURAK SOK. NO:21/B POSTA KODU:16110", "phone": "2244534180", "loc": "40.209213,28.98711" }, { "name": "DOĞAN ECZANESİ", "dist": "OSMANGAZİ", "address": "BAHAR MAH. NASİP SOK. NO:9 POSTA KODU:16240", "phone": "2242727285", "loc": "40.203136,29.066585" }, { "name": "NİLÜFER MERVE ECZANESİ", "dist": "NİLÜFER", "address": "CUMHURİYET MAH. GAZİ CAD. NO:48/A-B POSTA KODU:16140", "phone": "2244525255", "loc": "40.222018,28.972105" }, { "name": "NARMANLI ECZANESİ", "dist": "NİLÜFER", "address": "YÜZÜNCÜYIL MAH. HAKAN SEPETÇİ CAD. NO:2A/H POSTA KODU:16280", "phone": "2249093569", "loc": "40.216502,28.893327" }, { "name": "MERKEZ BURSA ECZANESİ", "dist": "OSMANGAZİ", "address": "İNTİZAM MAH. İLKBAHAR CAD. 18/A POSTA KODU:16050", "phone": "2242531319", "loc": "40.19448,29.055746" }, { "name": "BATI TRAKYA ECZANESİ", "dist": "YILDIRIM", "address": "YİĞİTLER MAH. TÜRKMENBAŞI CAD. NO:123/A2 POSTA KODU:16290", "phone": "2243420298", "loc": "40.189238,29.154597" }, { "name": "1050 KONUTLAR ECZANESİ", "dist": "OSMANGAZİ", "address": "AKPINAR MAH. HANCI CAD. NO:22/1 POSTA KODU:16160", "phone": "2242422122", "loc": "40.243798,28.972074" }, { "name": "KUZEY ECZANESİ", "dist": "YILDIRIM", "address": "MİLLET MAH. 7202 SOK. NO:4/C POSTA KODU:16260", "phone": "2242120072", "loc": "40.21423,29.095499" }, { "name": "NİLÜFER SU ECZANESİ", "dist": "NİLÜFER", "address": "ÜÇEVLER MAH. ÜLMAN SOK. NO:6/1A POSTA KODU:16270", "phone": "2244414383", "loc": "40.19765,28.948233" }, { "name": "GÜRKAN ECZANESİ", "dist": "NİLÜFER", "address": "ESENTEPE MAH. TUNA CAD. NO:96/A POSTA KODU:16130", "phone": "2242400848", "loc": "40.2243,28.983861" }, { "name": "BEYAZIT ECZANESİ", "dist": "YILDIRIM", "address": "BEYAZIT MAH. EĞİTİM CAD. KASIM ÖNADIM BULVARI NO:15 POSTA KODU:16330", "phone": "2243641015", "loc": "40.185856,29.100612" }, { "name": "YENİKALE ECZANESİ", "dist": "OSMANGAZİ", "address": "DİKKALDIRIM MAH. HAT CAD. NO:1/1-B POSTA KODU:16090", "phone": "2242364698", "loc": "40.207872,29.018024" }, { "name": "ORHANGAZİ ECZANESİ", "dist": "ORHANGAZİ", "address": "HÜRRİYET MAH. CAMİ SOK. NO:13/B POSTA KODU:16820", "phone": "2245733373", "loc": "40.483893,29.30615" }, { "name": "AKKAYNAK ECZANESİ", "dist": "OSMANGAZİ", "address": "DEMİRTAŞ BARBAROS MAH. CUMHURİYET CAD. NO:1/B POSTA KODU:16245", "phone": "2242622266", "loc": "40.271445,29.093272" }, { "name": "MELİS ECZANESİ", "dist": "GEMLİK", "address": "BALIKPAZARI MAH. YEDİEVLER SOK. NO:59/A POSTA KODU:16600", "phone": "2245135265", "loc": "40.43557899,29.15402688" }, { "name": "HAYAT ECZANESİ", "dist": "KARACABEY", "address": "SIRABADEMLER MAH. ORTAOKUL CAD. NO:76 POSTA KODU:16700", "phone": "2246600006", "loc": "40.21101801,28.36103292" }, { "name": "GİZEM NUR ECZANESİ", "dist": "OSMANGAZİ", "address": "ELMASBAHÇELER MAH. GAZLI SOK. NO:68/A POSTA KODU:16230", "phone": "2242513210", "loc": "40.192146,29.076706" }, { "name": "NARLI ECZANESİ", "dist": "OSMANGAZİ", "address": "YUNUSELİ MAH. YUNUSELİ BULVARI NO:195/B POSTA KODU:16104", "phone": "2242484898", "loc": "40.248124,29.015635" }, { "name": "YENİ ORHAN ECZANESİ", "dist": "BÜYÜKORHAN", "address": "ORHAN MAH. DR.İBRAHİM ÖKTEM CAD. NO:35 POSTA KODU:16990", "phone": "5062260344", "loc": "39.77504298,28.88199504" }, { "name": "TUBA GÜMÜŞ ECZANESİ", "dist": "İNEGÖL", "address": "BURHANİYE MAH. KEMALETTİN SAMİ PAŞA CAD. NO:30 POSTA KODU:16400", "phone": "2247156368", "loc": "40.08051396,29.50676712" }, { "name": "ZÜMRÜT ECZANESİ", "dist": "İNEGÖL", "address": "HAMİDİYE MAH. HASTANE CAD. NO:35/C POSTA KODU:16400", "phone": "5312394404", "loc": "40.10166999,29.52455688" }, { "name": "AKÇALAR ECZANESİ", "dist": "NİLÜFER", "address": "AKÇALAR MAH. KANAL(660) CAD. NO:14/B/A POSTA KODU:16225", "phone": "2244885086", "loc": "40.176073,28.744807" }, { "name": "BİLGİN ECZANESİ", "dist": "MUDANYA", "address": "ÖMERBEY MAH. DENİZ CAD. 2.BARIŞ SOK. AKARSU SİTESİ C-BLOK NO:4B POSTA KODU:16940", "phone": "2245448474", "loc": "40.369699,28.891523" }, { "name": "FLORA ECZANESİ", "dist": "NİLÜFER", "address": "23 NİSAN MAH. KÖROĞLU CAD. NO:5B/B POSTA KODU:16090", "phone": "2249090216", "loc": "40.217581,28.945144" }] };
         //var pharmaciesData = @Html.Raw((ViewBag.PharmaciesData));
         var pharmacyIcon = createIcon('\img.png', [32, 32], [16, 32], [0, -32]);
         var userIcon = createIcon('https://cdn0.iconfinder.com/data/icons/user-icons-4/100/user-17-512.png', [40, 40], [16, 32], [0, -32]);
+
+        const prevButton = document.getElementById('prevPage');
+        const nextButton = document.getElementById('nextPage');
+        const firstButton = document.getElementById('first');
+        const lastButton = document.getElementById('last');
+        const searchinput = document.getElementById('searchInput');
+        const filter = turkishToLower(searchinput.value);
 
         function CreateMap(lat, lng, zoom, maxZoom) {
             openstreetmap = L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: maxZoom });
@@ -350,62 +467,154 @@
             marker.setIcon(originalIcon);
         }
 
+        let rowCount = 0;
+        let totalPage = 0;
+        let currentPage = 1;
+        let rowsPerPage = 10;
+        var filteredPharmacies = [];
+
+        function onRowsPerPageChange() {
+            rowsPerPage = parseInt(document.getElementById('rowsPerPage').value);
+            currentPage = 1;
+            filteredPharmacies = [];
+            filterPharmacies();
+        }
+
+        function updatePagination() {
+            const pageNumbersContainer = document.getElementById('pageNumbers');
+
+            pageNumbersContainer.innerHTML = '';
+
+            prevButton.disabled = currentPage === 1;
+            nextButton.disabled = currentPage === totalPage;
+            firstButton.disabled = currentPage === 1;
+            lastButton.disabled = currentPage === totalPage;
+
+            for (let i = 1; i <= totalPage; i++) {
+                const pageButton = document.createElement('button');
+                pageButton.innerText = i;
+                pageButton.classList.add('pagination-number');
+                pageButton.onclick = () => changePage(i);
+
+                if (i === currentPage) {
+                    pageButton.classList.add('active');
+                }
+
+                pageNumbersContainer.appendChild(pageButton);
+            }
+        }
+
+        function changePage(page) {
+            if (page < 1 || page > totalPage) return;
+            currentPage = page;
+            filteredPharmacies = [];
+            filterPharmacies();
+        }
+
+        prevButton.onclick = () => changePage(currentPage - 1);
+        nextButton.onclick = () => changePage(currentPage + 1);
+        firstButton.onclick = () => changePage(1);
+        lastButton.onclick = () => changePage(totalPage);
+
         function filterPharmacies() {
+
+            filteredPharmacies = [];
+
             const distance = parseFloat(document.getElementById('distance').value) || 0;
             const isDistanceEmptyOrZero = distance === '' || parseFloat(distance) === 0;
-            tableBody = document.getElementById('onDutyTable').getElementsByTagName('tbody')[0];
+
+            const search = turkishToLower(document.getElementById('searchInput').value);
+            const isSearchEmpty = search === '';
+
+            const tableBody = document.getElementById('onDutyTable').getElementsByTagName('tbody')[0];
             tableBody.innerHTML = '';
 
             removeAllMarkers();
 
             pharmaciesTestData.result.forEach(function (pharmacy) {
-
                 const loc = pharmacy.loc.split(',').map(coord => coord.trim());
                 const lat = parseFloat(loc[0]);
                 const lng = parseFloat(loc[1]);
-                pharmacyLatLng = L.latLng(lat, lng);
-
+                const pharmacyLatLng = L.latLng(lat, lng);
                 const distanceToPharmacy = userLatLng.distanceTo(pharmacyLatLng) / 1000;
 
-                if (isDistanceEmptyOrZero || distanceToPharmacy <= parseFloat(distance)) {
-                    const marker = createPharmacyMarker(pharmacy, lat, lng);
-                    pharmacyMarkers.push(marker);
+                const distanceFilter = isDistanceEmptyOrZero || distanceToPharmacy <= parseFloat(distance);
+                const nameMatch = turkishToLower(pharmacy.name).includes(search);
+                const addressMatch = turkishToLower(pharmacy.address).includes(search);
+                const searchFilter = isSearchEmpty || nameMatch || addressMatch;
 
-                    var formattedPhone = formatPhoneNumber(pharmacy.phone);
-                    const row = tableBody.insertRow();
-                    row.innerHTML =
-                        `
-                                             <td>${pharmacy.name}</td>
-                                             <td>${pharmacy.address}</td>
-                                             <td>${formattedPhone}</td>
-                                             <td>${distanceToPharmacy.toFixed(2)} km</td>
-                                             <td>
-                                                <button class="btn btn-success" onclick="getDirectionLeaflet(${lat}, ${lng})">Yol Tarifi (Leaflet)</button>
-                                                <button class="btn btn-primary" onclick="getDirectionGoogleMaps(${lat}, ${lng})">Yol Tarifi (Google Maps)</button>
-                                             </td>
-                                             `;
-
-                    row.addEventListener('click', function () {
-                        //map.setView(pharmacyLatLng, 15);
-                        map.flyTo(marker.getLatLng(), 15, {
-                            animate: true,
-                            duration: 1
-                        });
-                        marker.openPopup();
-
-                        const mapElement = document.getElementById('map');
-
-                        if (mapElement) {
-                            const rect = mapElement.getBoundingClientRect();
-                            const scrollPosition = rect.top + window.pageYOffset;
-                            window.scrollTo({
-                                top: scrollPosition - 20,
-                                behavior: 'smooth'
-                            });
-                        }
-                    });
+                if (searchFilter && distanceFilter) {
+                    filteredPharmacies.push({ pharmacy, lat, lng, distanceToPharmacy });
                 }
             });
+
+            rowCount = filteredPharmacies.length;
+            totalPage = Math.ceil(rowCount / rowsPerPage);
+
+            if (rowCount == 0) {
+                document.getElementById('totalPharmaciesCount').innerText = rowCount;
+                document.getElementById('totalPharmaciesCount').style.color = 'red';
+            }
+            else if (rowCount <= 10) {
+                document.getElementById('totalPharmaciesCount').innerText = rowCount;
+                document.getElementById('totalPharmaciesCount').style.color = 'D89A0D';
+            }
+            else if (10 < rowCount < 100) {
+                document.getElementById('totalPharmaciesCount').innerText = rowCount;
+            }
+            else if (rowCount > 100) {
+                document.getElementById('totalPharmaciesCount').innerText = rowCount;
+                document.getElementById('totalPharmaciesCount').style.color = 'green';
+            }
+
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = startIndex + rowsPerPage;
+            const currentPagePharmacies = filteredPharmacies.slice(startIndex, endIndex);
+
+            filteredPharmacies.forEach(function ({ pharmacy, lat, lng }) {
+                const marker = createPharmacyMarker(pharmacy, lat, lng);
+                pharmacyMarkers.push(marker);
+            });
+
+            currentPagePharmacies.forEach(function ({ pharmacy, lat, lng, distanceToPharmacy }) {
+                const marker = createPharmacyMarker(pharmacy, lat, lng);
+                pharmacyMarkers.push(marker);
+
+                const formattedPhone = formatPhoneNumber(pharmacy.phone);
+                const row = tableBody.insertRow();
+                row.innerHTML =
+                    `
+                     <td>${pharmacy.name}</td>
+                     <td>${pharmacy.address}</td>
+                     <td>${formattedPhone}</td>
+                     <td>${distanceToPharmacy.toFixed(2)} km</td>
+                     <td>
+                        <button class="btn btn-success" onclick="getDirectionLeaflet(${lat}, ${lng})">Yol Tarifi (Leaflet)</button>
+                        <button class="btn btn-primary" onclick="getDirectionGoogleMaps(${lat}, ${lng})">Yol Tarifi (Google Maps)</button>
+                     </td>
+                     `;
+
+                row.addEventListener('click', function () {
+                    map.flyTo(marker.getLatLng(), 15, {
+                        animate: true,
+                        duration: 1
+                    });
+                    marker.openPopup();
+
+                    const mapElement = document.getElementById('map');
+
+                    if (mapElement) {
+                        const rect = mapElement.getBoundingClientRect();
+                        const scrollPosition = rect.top + window.pageYOffset;
+                        window.scrollTo({
+                            top: scrollPosition - 20,
+                            behavior: 'smooth'
+                        });
+                    }
+                });
+            });
+
+            updatePagination();
         }
 
         function formatPhoneNumber(phoneNumber) {
@@ -418,11 +627,8 @@
         }
 
         let sortOrder = 'asc';
-        let lastSortedColumn = null;
 
         function sortTable(criteria, thElement) {
-            tableBody = document.getElementById('onDutyTable').getElementsByTagName('tbody')[0];
-            rows = Array.from(tableBody.rows);
 
             let columnIndex;
             switch (criteria) {
@@ -432,9 +638,6 @@
                 case 'address':
                     columnIndex = 1;
                     break;
-                case 'phone':
-                    columnIndex = 2;
-                    break;
                 case 'distance':
                     columnIndex = 3;
                     break;
@@ -442,21 +645,28 @@
                     return;
             }
 
-            rows.sort((a, b) => {
-                let valueA = a.cells[columnIndex].innerText.toLowerCase();
-                let valueB = b.cells[columnIndex].innerText.toLowerCase();
+            filteredPharmacies.sort((a, b) => {
+                let valueA, valueB;
 
                 if (criteria === 'distance') {
-                    valueA = parseFloat(valueA);
-                    valueB = parseFloat(valueB);
+                    valueA = a.distanceToPharmacy;
+                    valueB = b.distanceToPharmacy;
+                } 
+                else {
+                    valueA = a.pharmacy[criteria].toLowerCase();
+                    valueB = b.pharmacy[criteria].toLowerCase();
+                }
+
+                if(criteria === 'distance') {
                     return sortOrder === 'asc' ? valueA - valueB : valueB - valueA;
-                } else {
+                } 
+                else {
                     return sortOrder === 'asc' ? valueA.localeCompare(valueB) : valueB.localeCompare(valueA);
                 }
             });
 
             sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
-            rows.forEach(row => tableBody.appendChild(row));
+            updateTable();
             SortIndicators(thElement);
         }
 
@@ -468,13 +678,39 @@
             const indicator = thElement.querySelector('.sort-indicator');
             if (sortOrder === 'asc') {
                 indicator.innerHTML = '▲';
-                indicator.style.color = 'green'
+                indicator.style.color = 'green';
             } else {
                 indicator.innerHTML = '▼';
                 indicator.style.color = 'red';
             }
 
             lastSortedColumn = thElement;
+        }
+
+        function updateTable() {
+            const tableBody = document.getElementById('onDutyTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = '';
+
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = startIndex + rowsPerPage;
+            const currentPagePharmacies = filteredPharmacies.slice(startIndex, endIndex);
+
+            currentPagePharmacies.forEach(function (pharmacyData) {
+                const pharmacy = pharmacyData.pharmacy;
+                const row = tableBody.insertRow();
+                row.innerHTML = `
+                                    <td>${pharmacy.name}</td>
+                                    <td>${pharmacy.address}</td>
+                                    <td>${formatPhoneNumber(pharmacy.phone)}</td>
+                                    <td>${pharmacyData.distanceToPharmacy.toFixed(2)} km</td>
+                                    <td>
+                                        <button class="btn btn-success" onclick="getDirectionLeaflet(${pharmacyData.lat}, ${pharmacyData.lng})">Yol Tarifi (Leaflet)</button>
+                                        <button class="btn btn-primary" onclick="getDirectionGoogleMaps(${pharmacyData.lat}, ${pharmacyData.lng})">Yol Tarifi (Google Maps)</button>
+                                    </td>
+                                `;
+            });
+
+            updatePagination();
         }
 
         function turkishToLower(str) {
@@ -494,20 +730,20 @@
 
             const popupContent =
                 `<div style="width: 200px; font-family: Arial, sans-serif;">
-                                    <div style="padding: 10px; box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1); border-radius: 5px;">
-                                        <b style="font-size: 16px; color: #333; text-align: center; display: block;">${pharmacy.name}</b>
-                                        <div style="margin-top: 10px; color: #666;">
-                                            <b style="color: #333;">Adres:</b><br> ${pharmacy.address}<br>
-                                            <b style="color: #333;">Telefon:</b><br> ${pharmacy.phone}
-                                        </div>
-                                        <center>
-                                            <button style="padding: 5px 10px; background-color: green; border: none; color: white; border-radius: 5px; cursor: pointer; margin: 2px;"
-                                                    onclick="getDirectionLeaflet(${lat}, ${lng})">Yol Tarifi (Leaflet)</button>
-                                            <button style="padding: 5px 10px; background-color: #007BFF; border: none; color: white; border-radius: 5px; cursor: pointer; margin: 2px;"
-                                                    onclick="getDirectionGoogleMaps(${lat}, ${lng})">Yol Tarifi (Google Maps)</button>
-                                        </center>
-                                    </div>
-                                </div>`;
+                                                                                            <div style="padding: 10px; box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1); border-radius: 5px;">
+                                                                                                <b style="font-size: 16px; color: #333; text-align: center; display: block;">${pharmacy.name}</b>
+                                                                                                <div style="margin-top: 10px; color: #666;">
+                                                                                                    <b style="color: #333;">Adres:</b><br> ${pharmacy.address}<br>
+                                                                                                    <b style="color: #333;">Telefon:</b><br> ${pharmacy.phone}
+                                                                                                </div>
+                                                                                                <center>
+                                                                                                    <button style="padding: 5px 10px; background-color: green; border: none; color: white; border-radius: 5px; cursor: pointer; margin: 2px;"
+                                                                                                            onclick="getDirectionLeaflet(${lat}, ${lng})">Yol Tarifi (Leaflet)</button>
+                                                                                                    <button style="padding: 5px 10px; background-color: #007BFF; border: none; color: white; border-radius: 5px; cursor: pointer; margin: 2px;"
+                                                                                                            onclick="getDirectionGoogleMaps(${lat}, ${lng})">Yol Tarifi (Google Maps)</button>
+                                                                                                </center>
+                                                                                            </div>
+                                                                                        </div>`;
 
             const popup = L.popup({
                 closeOnClick: false,
@@ -531,65 +767,6 @@
             });
 
             return marker;
-        }
-
-        function searchTable() {
-
-            searchinput = document.getElementById('searchInput');
-            const filter = turkishToLower(searchinput.value);
-            tableBody = document.getElementById('onDutyTable').getElementsByTagName('tbody')[0];
-            rows = Array.from(tableBody.rows);
-
-            removeAllMarkers();
-
-            rows.forEach(row => {
-                const nameCell = row.cells[0];
-                const addressCell = row.cells[1];
-                if (nameCell || addressCell) {
-                    const name = nameCell ? turkishToLower(nameCell.innerText) : '';
-                    const address = addressCell ? turkishToLower(addressCell.innerText) : '';
-                    if (name.includes(filter) || address.includes(filter)) {
-                        row.style.display = '';
-
-                        const pharmaciesFound = pharmaciesTestData.result.filter(p => {
-                            return turkishToLower(p.name).includes(name) || turkishToLower(p.address).includes(address);
-                        });
-
-                        pharmaciesFound.forEach(pharmacy => {
-                            const loc = pharmacy.loc.split(',').map(coord => coord.trim());
-                            const lat = parseFloat(loc[0]);
-                            const lng = parseFloat(loc[1]);
-
-                            pharmacyLatLng = L.latLng(lat, lng);
-                            const marker = createPharmacyMarker(pharmacy, lat, lng);
-                            pharmacyMarkers.push(marker);
-
-                            row.addEventListener('click', function () {
-                                map.flyTo(marker.getLatLng(), 15, {
-                                    animate: true,
-                                    duration: 1
-                                });
-                                marker.openPopup();
-
-                                const mapElement = document.getElementById('map');
-
-                                if (mapElement) {
-                                    const rect = mapElement.getBoundingClientRect();
-                                    const scrollPosition = rect.top + window.pageYOffset;
-                                    window.scrollTo({
-                                        top: scrollPosition - 20,
-                                        behavior: 'smooth'
-                                    });
-                                }
-                            });
-
-                        });
-                    }
-                    else {
-                        row.style.display = 'none';
-                    }
-                }
-            });
         }
 
         function calculateArea(shapeType, coordinates, layer) {
@@ -687,7 +864,7 @@
                 var coordinates = geoJSON.geometry.coordinates;
 
                 var area = calculateArea(shapeType, coordinates, layer);
-                ı
+
                 var popupShapeContent = createShapePopupContent(shapeType, area, layer);
 
                 updatePopupForm(layer);
